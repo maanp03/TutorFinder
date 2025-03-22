@@ -1,10 +1,13 @@
 const express = require('express');
-const { createClientProfile, getClientProfile } = require('../controllers/clientController');
-const authMiddleware = require('../middleware/authMiddleware');
 const router = express.Router();
+const {
+  createOrUpdateClientProfile,
+  getClientProfile,
+} = require('../controllers/clientController');
+const jwtMiddleware = require('../middleware/JwtMiddleware');
 
-router.post('/profile', authMiddleware, createClientProfile);
+router.post('/profile', jwtMiddleware, createOrUpdateClientProfile);
 
-router.get('/profile/:userId', authMiddleware, getClientProfile);
+router.get('/profile/:userId', jwtMiddleware, getClientProfile);
 
 module.exports = router;

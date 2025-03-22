@@ -1,10 +1,12 @@
 const express = require('express');
-const { createTutorProfile, getTutorProfile } = require('../controllers/tutorController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { createTutorProfile, getTutorProfile, getAllTutors } = require('../controllers/tutorController');
+const jwtMiddleware = require('../middleware/JwtMiddleware');
 const router = express.Router();
 
-router.post('/profile', authMiddleware, createTutorProfile);
+router.post('/profile', jwtMiddleware, createTutorProfile);
 
-router.get('/profile/:userId', authMiddleware, getTutorProfile);
+router.get('/profile/:userId', jwtMiddleware, getTutorProfile);
+
+router.get('/profile-all', jwtMiddleware, getAllTutors);
 
 module.exports = router;

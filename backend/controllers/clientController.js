@@ -1,45 +1,53 @@
-const User = require('../models/User');
-const Client = require('../models/Client');
+const User = require('../models/user');
+const Client = require('../models/clientProfile');
 
-// Create Client Profile
-const createClientProfile = async (req, res) => {
-  const { userId, bio, gradeLevel, subjects } = req.body;
+const createOrUpdateClientProfile = async (req, res) => {
+  const { name, grade } = req.body;
+  const userId = req.user?.user?.id;
+
+  if (!userId) {
+    return res.status(400).json({ msg: 'User not authenticated properly' });
+  }
 
   try {
-    // Check if user exists and is a client
     const user = await User.findById(userId);
     if (!user || user.role !== 'client') {
-      return res.status(400).json({ msg: 'Invalid client ID' });
+      return res.status(400).json({ msg: 'Invalid client ID or role' });
     }
 
-    // Create client profile
-    const clientProfile = new Client({
-      user: userId,
-      bio,
-      gradeLevel,
-      subjects,
-    });
+    let clientProfile = await Client.findOne({ user: userId });
+
+    if (!clientProfile) {
+      clientProfile = new Client({
+        user: userId,
+        name,
+        grade,
+      });
+    } else {
+      clientProfile.name = name;
+      clientProfile.grade = grade;
+    }
 
     await clientProfile.save();
-    res.json(clientProfile);
+    return res.json(clientProfile);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Server error');
+    return res.status(500).send('Server error');
   }
 };
 
-// Get Client Profile
 const getClientProfile = async (req, res) => {
+  const userId = req.params.userId;
   try {
-    const clientProfile = await Client.findOne({ user: req.params.userId }).populate('user', ['name', 'email']);
+    const clientProfile = await Client.findOne({ user: userId });
     if (!clientProfile) {
-      return res.status(400).json({ msg: 'Client profile not found' });
+      return res.status(404).json({ msg: 'Client profile not found' });
     }
-    res.json(clientProfile);
+    return res.json(clientProfile);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Server error');
+    return res.status(500).send('Server error');
   }
 };
 
-module.exports = { createClientProfile, getClientProfile };
+module.exports = { createOrUpdateClientProfile, getClientProfile };
