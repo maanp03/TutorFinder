@@ -62,6 +62,22 @@ const ClientDashboard = () => {
     setShowProfileForm(true);
   };
 
+  const handleBookSession = async (tutorId) => {
+    try {
+      const res = await axios.post('/sessions', {
+        tutorId,
+        clientId: profile._id,
+        date: new Date().toISOString(),
+        duration: 60,
+      });
+      alert('Session booked!');
+      setSessions((prev) => [...prev, res.data]);
+    } catch (error) {
+      console.error('Booking failed:', error);
+      alert('Booking failed');
+    }
+  };
+
   return (
     <div style={{ margin: '20px' }}>
       <h2>Client Dashboard</h2>
@@ -105,12 +121,39 @@ const ClientDashboard = () => {
       )}
 
       <div style={{ marginTop: '30px' }}>
+        <h3>Available Tutors</h3>
         {tutors.length > 0 ? (
           <ul>
-           
+            {tutors.map((tutor) => (
+              <li key={tutor._id}>
+                <strong>{tutor.name}</strong> - {tutor.subjects?.join(', ')}
+                <button onClick={() => handleBookSession(tutor._id)} style={{ marginLeft: '10px' }}>
+                  Book Session
+                </button>
+              </li>
+            ))}
           </ul>
         ) : (
           <p>No tutors available.</p>
+        )}
+      </div>
+
+      <div style={{ marginTop: '30px' }}>
+        <h3>My Sessions</h3>
+        {sessions.length > 0 ? (
+          <ul>
+            {sessions.map((session) => (
+              <li key={session._id}>
+                {new Date(session.date).toLocaleString()} - {session.duration} min
+                <br />
+                <strong>Tutor ID:</strong> {session.tutor?._id || session.tutor}
+                <br />
+                <strong>Tutor Name:</strong> {session.tutor?.name || 'N/A'}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No sessions booked yet.</p>
         )}
       </div>
     </div>

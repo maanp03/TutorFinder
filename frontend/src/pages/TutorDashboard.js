@@ -23,6 +23,34 @@ const TutorDashboard = () => {
       });
   }, [userId]);
 
+  useEffect(() => {
+    if (profile?._id) {
+      axios
+        .get('/sessions', { params: { tutorId: profile._id } })
+        .then((res) => {
+          setSessions(res.data);
+        })
+        .catch((err) => console.error(err));
+    }
+  }, [profile]);
+
+  const handleCreateOrUpdateProfile = async (e) => {
+    e.preventDefault();
+    try {
+      const subjectsArray = formSubjects.split(',').map((s) => s.trim());
+
+      const res = await axios.post('/tutor/profile', {
+        name: formName,
+        bio: formBio,
+        subjects: subjectsArray,
+      });
+      setProfile(res.data);
+      setShowProfileForm(false);
+    } catch (err) {
+      console.error('Profile create/update failed:', err.response?.data);
+      alert('Profile update failed');
+    }
+  };
 
   const handleShowForm = () => {
     if (profile) {
@@ -37,6 +65,55 @@ const TutorDashboard = () => {
     <div style={{ margin: '20px' }}>
       <h2>Tutor Dashboard</h2>
 
+      {}
+      {profile ? (
+        <div>
+          <h3>My Profile</h3>
+          <p><strong>Name:</strong> {profile.name}</p>
+          <p><strong>Bio:</strong> {profile.bio}</p>
+          <p><strong>Subjects:</strong> {profile.subjects?.join(', ')}</p>
+          <button onClick={handleShowForm}>Update Profile</button>
+        </div>
+      ) : (
+        <div>
+          <p>No tutor profile found.</p>
+          <button onClick={handleShowForm}>Create Profile</button>
+        </div>
+      )}
+
+      {}
+      {showProfileForm && (
+        <form onSubmit={handleCreateOrUpdateProfile} style={{ marginTop: '20px' }}>
+          <div style={{ marginBottom: '10px' }}>
+            <label>Name: </label>
+            <input
+              type="text"
+              value={formName}
+              onChange={(e) => setFormName(e.target.value)}
+              required
+            />
+          </div>
+          <div style={{ marginBottom: '10px' }}>
+            <label>Bio: </label>
+            <input
+              type="text"
+              value={formBio}
+              onChange={(e) => setFormBio(e.target.value)}
+              required
+            />
+          </div>
+          <div style={{ marginBottom: '10px' }}>
+            <label>Subjects (comma-separated): </label>
+            <input
+              type="text"
+              value={formSubjects}
+              onChange={(e) => setFormSubjects(e.target.value)}
+              required
+            />
+          </div>
+          <button type="submit">Save Profile</button>
+        </form>
+      )}
 
       {}
       <div style={{ marginTop: '30px' }}>
