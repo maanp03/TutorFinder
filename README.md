@@ -66,4 +66,4 @@ The project is divided into two main parts: **Backend** and **Frontend**.
 
 ---
 
-Feel free to customize and expand this README to meet your project's needs. Happy coding!
+
