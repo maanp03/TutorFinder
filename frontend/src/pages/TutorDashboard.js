@@ -32,7 +32,7 @@ const TutorDashboard = () => {
     fetchProfile();
   }, [userId]);
 
-  // Fetch sessions if profile exists
+  // Fetch sessions
   useEffect(() => {
     const fetchSessions = async () => {
       if (profile?._id) {
@@ -52,7 +52,19 @@ const TutorDashboard = () => {
     fetchSessions();
   }, [profile]);
 
-  // Handle profile creation or update
+  // Accept session
+  const handleAccept = (sessionId) => {
+    console.log('Session accepted:', sessionId);
+    // Future: Update status on backend
+  };
+
+  // Decline session
+  const handleDecline = (sessionId) => {
+    setSessions((prev) => prev.filter((s) => s._id !== sessionId));
+    // Future: Delete or update on backend if needed
+  };
+
+  // Create or update profile
   const handleCreateOrUpdateProfile = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -74,7 +86,7 @@ const TutorDashboard = () => {
     }
   };
 
-  // Show profile form with existing data
+  // Show profile form
   const handleShowForm = () => {
     if (profile) {
       setFormName(profile.name || '');
@@ -88,10 +100,7 @@ const TutorDashboard = () => {
     <div style={{ margin: '20px', backgroundColor: '#f0f8ff', minHeight: '100vh', padding: '20px' }}>
       <h2>Welcome to Your Tutor Dashboard{profile ? `, ${profile.name}!` : '!'}</h2>
 
-      {/* Display error message */}
       {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      {/* Display loading state */}
       {isLoading && <p>Loading...</p>}
 
       {/* Profile Section */}
@@ -102,14 +111,32 @@ const TutorDashboard = () => {
             <p><strong>Name:</strong> {profile.name}</p>
             <p><strong>Bio:</strong> {profile.bio}</p>
             <p><strong>Subjects:</strong> {profile.subjects?.join(', ')}</p>
-            <button onClick={handleShowForm} style={{ backgroundColor: '#4CAF50', color: 'white', padding: '10px', border: 'none', borderRadius: '5px' }}>
+            <button
+              onClick={handleShowForm}
+              style={{
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                padding: '10px',
+                border: 'none',
+                borderRadius: '5px',
+              }}
+            >
               Update Profile
             </button>
           </>
         ) : (
           <>
             <p>No tutor profile found. Let's create one!</p>
-            <button onClick={handleShowForm} style={{ backgroundColor: '#4CAF50', color: 'white', padding: '10px', border: 'none', borderRadius: '5px' }}>
+            <button
+              onClick={handleShowForm}
+              style={{
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                padding: '10px',
+                border: 'none',
+                borderRadius: '5px',
+              }}
+            >
               Create Profile
             </button>
           </>
@@ -151,7 +178,10 @@ const TutorDashboard = () => {
                 style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #ccc' }}
               />
             </div>
-            <button type="submit" style={{ backgroundColor: '#4CAF50', color: 'white', padding: '10px', border: 'none', borderRadius: '5px' }}>
+            <button
+              type="submit"
+              style={{ backgroundColor: '#4CAF50', color: 'white', padding: '10px', border: 'none', borderRadius: '5px' }}
+            >
               {isLoading ? 'Saving...' : 'Save Profile'}
             </button>
           </form>
@@ -164,12 +194,25 @@ const TutorDashboard = () => {
         {sessions.length > 0 ? (
           <ul style={{ listStyle: 'none', padding: '0' }}>
             {sessions.map((session) => (
-              <li key={session._id} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}>
+              <li key={session._id} style={{ marginBottom: '15px', padding: '15px', border: '1px solid #ddd', borderRadius: '5px' }}>
                 <strong>Date:</strong> {new Date(session.date).toLocaleDateString()} <br />
                 <strong>Time:</strong> {new Date(session.date).toLocaleTimeString()} <br />
                 <strong>Duration:</strong> {session.duration} min <br />
                 <strong>Client ID:</strong> {session.client?._id || session.client} <br />
-                <strong>Client Name:</strong> {session.client?.name || 'N/A'}
+                <strong>Client Name:</strong> {session.client?.name || 'N/A'} <br /><br />
+
+                <button
+                  onClick={() => handleAccept(session._id)}
+                  style={{ marginRight: '10px', backgroundColor: '#4CAF50', color: 'white', padding: '6px 12px', border: 'none', borderRadius: '4px' }}
+                >
+                  Accept
+                </button>
+                <button
+                  onClick={() => handleDecline(session._id)}
+                  style={{ backgroundColor: '#f44336', color: 'white', padding: '6px 12px', border: 'none', borderRadius: '4px' }}
+                >
+                  Decline
+                </button>
               </li>
             ))}
           </ul>
