@@ -170,6 +170,7 @@ const ClientDashboard = () => {
                   <th>Subjects</th>
                   <th>Bio</th>
                   <th>Action</th>
+          <th>Delete</th>
                 </tr>
               </thead>
               <tbody>
@@ -184,6 +185,15 @@ const ClientDashboard = () => {
                         onClick={() => handleBookSession(tutor._id)}
                       >
                         Book Session
+                      </button>
+                    </td>
+
+                             <td>
+                      <button
+                        className="btn btn-sm btn-success"
+                
+                      >
+                        Delete Tutor
                       </button>
                     </td>
                   </tr>
