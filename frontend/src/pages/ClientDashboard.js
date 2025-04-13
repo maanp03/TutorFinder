@@ -170,7 +170,7 @@ const ClientDashboard = () => {
                   <th>Subjects</th>
                   <th>Bio</th>
                   <th>Action</th>
-          <th>Delete</th>
+          <th>View Tutor</th>
                 </tr>
               </thead>
               <tbody>
@@ -193,7 +193,7 @@ const ClientDashboard = () => {
                         className="btn btn-sm btn-success"
                 
                       >
-                        Delete Tutor
+                        View
                       </button>
                     </td>
                   </tr>
