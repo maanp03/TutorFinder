@@ -5,6 +5,7 @@ const SessionSchema = new mongoose.Schema({
   client: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', required: true },
   date: { type: Date, required: true },
   duration: { type: Number, required: true },
+  status: { type: String, enum: ['pending', 'accepted', 'rejected', 'cancelled'], default: 'pending' },
 });
 
 module.exports = mongoose.model('Session', SessionSchema);
