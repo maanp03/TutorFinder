@@ -2,7 +2,7 @@
 const jwt = require('jsonwebtoken');
 const Tutor = require('../models/tutorProfile');
 const Client = require('../models/clientProfile');
-const User = require('../models/user');
+const User = require('../models/User');
 const Session = require('../models/session');
 
 const ADMIN_CREDENTIALS = {

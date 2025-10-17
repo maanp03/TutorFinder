@@ -8,6 +8,8 @@ const adminRoutes = require('./routes/adminRoutes');
 const tutorRoutes = require('./routes/tutorRoutes');
 const clientRoutes = require('./routes/clientRoutes');
 const sessionRoutes = require('./routes/sessionRoutes');
+const availabilityRoutes = require('./routes/availabilityRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 dotenv.config();
 
@@ -24,6 +26,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/tutor', tutorRoutes);
 app.use('/api/client', clientRoutes);
 app.use('/api/sessions', sessionRoutes);
+app.use('/api/availability', availabilityRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 
 app.get('/', (req, res) => {
