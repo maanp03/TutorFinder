@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from '../api/axiosInstance';
+import { useAuth } from '../context/AuthContext';
 
 const TutorDashboard = () => {
   const [profile, setProfile] = useState(null);
@@ -19,6 +21,8 @@ const TutorDashboard = () => {
   const [formSubjects, setFormSubjects] = useState('');
 
   const userId = localStorage.getItem('userId');
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   // Fetch tutor profile
   useEffect(() => {
@@ -228,6 +232,17 @@ const TutorDashboard = () => {
     }
     setShowProfileForm(true);
   };
+  // delete account function added
+  const handleDeleteAccount = async () => {
+    try {
+      await axios.delete('/tutor/account');
+      logout();
+      navigate('/');
+    } catch (err) {
+      setError('Failed to delete account. Please try again.');
+      console.error('Account deletion failed:', err.response?.data);
+    }
+  };
 
   return (
     <div style={{ margin: '20px', backgroundColor: '#f0f8ff', minHeight: '100vh', padding: '20px' }}>
@@ -250,6 +265,12 @@ const TutorDashboard = () => {
             <button onClick={handleShowForm} style={{ backgroundColor: '#4CAF50', color: 'white', padding: '10px', border: 'none', borderRadius: '5px' }}>
               Update Profile
             </button>
+            <button
+                    className="btn btn-danger"
+                    onClick={handleDeleteAccount}
+                  >
+                    Delete Account
+                  </button>
           </>
         ) : (
           <>
@@ -454,3 +475,6 @@ const TutorDashboard = () => {
 };
 
 export default TutorDashboard;
+
+
+
