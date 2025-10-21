@@ -1,6 +1,6 @@
 const express = require('express');
 const jwtMiddleware = require('../middleware/JwtMiddleware');
-const { adminLogin, getTutors, getClients, deleteTutor, deleteClient } = require('../controllers/adminController');
+const { adminLogin, getTutors, getClients, deleteTutor, deleteClient, getAcceptedSessions } = require('../controllers/adminController');
 const router = express.Router();
 
 // Admin login
@@ -17,5 +17,8 @@ router.delete('/tutors/:tutorId', deleteTutor);
 
 // Delete a client
 router.delete('/clients/:clientId', deleteClient);
+
+// Get accepted sessions
+router.get('/sessions', jwtMiddleware, getAcceptedSessions);
 
 module.exports = router;

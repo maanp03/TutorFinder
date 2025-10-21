@@ -110,10 +110,24 @@ const deleteClient = async (req, res) => {
   }
 };
 
+const getAcceptedSessions = async (req, res) => {
+  try {
+    const sessions = await Session.find({ status: 'accepted' })
+      .populate('tutor', ['name', 'subjects'])
+      .populate('client', ['name', 'grade'])
+      .sort({ date: -1 });
+    res.json(sessions);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+
 module.exports = {
   adminLogin,
   getTutors,
   getClients,
   deleteTutor,
   deleteClient,
+  getAcceptedSessions,
 };

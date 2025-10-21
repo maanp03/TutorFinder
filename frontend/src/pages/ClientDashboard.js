@@ -379,6 +379,9 @@ const ClientDashboard = () => {
   const [formName, setFormName] = useState('');
   const [formGrade, setFormGrade] = useState('');
   const [error, setError] = useState('');
+  const [selectedTutor, setSelectedTutor] = useState(null);
+  const [showTutorModal, setShowTutorModal] = useState(false);
+  const [tutorAvailability, setTutorAvailability] = useState([]);
  
   const userId = localStorage.getItem('userId');
   const { logout } = useAuth();
@@ -496,6 +499,35 @@ const ClientDashboard = () => {
       setError('Failed to delete account. Please try again.');
       console.error('Account deletion failed:', err.response?.data);
     }
+  };
+
+  const handleViewTutor = async (tutor) => {
+    setSelectedTutor(tutor);
+    setShowTutorModal(true);
+    try {
+      const res = await axios.get(`/availability/tutor/${tutor._id}`);
+      setTutorAvailability(res.data);
+    } catch (err) {
+      console.error('Failed to fetch tutor availability:', err);
+      setTutorAvailability([]);
+    }
+  };
+
+  const closeTutorModal = () => {
+    setShowTutorModal(false);
+    setSelectedTutor(null);
+    setTutorAvailability([]);
+  };
+
+  const formatTime = (minutes) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  };
+
+  const getWeekdayName = (weekday) => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[weekday];
   };
  
   return (
@@ -648,7 +680,10 @@ const ClientDashboard = () => {
                     </td>
 
                     <td>
-                      <button className="btn btn-sm btn-success">
+                      <button 
+                        className="btn btn-sm btn-info"
+                        onClick={() => handleViewTutor(tutor)}
+                      >
                         View
                       </button>
                     </td>
@@ -728,6 +763,82 @@ const ClientDashboard = () => {
             )}
           </div>
         </div>
+
+        {/* Tutor Details Modal */}
+        {showTutorModal && selectedTutor && (
+          <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <div className="modal-dialog modal-lg modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header bg-primary text-white">
+                  <h5 className="modal-title fw-bold">Tutor Details</h5>
+                  <button 
+                    type="button" 
+                    className="btn-close btn-close-white" 
+                    onClick={closeTutorModal}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <div className="row">
+                    <div className="col-md-6">
+                      <h6 className="fw-bold text-primary">Personal Information</h6>
+                      <p><strong>Name:</strong> {selectedTutor.name}</p>
+                      <p><strong>Bio:</strong> {selectedTutor.bio}</p>
+                      <p><strong>Subjects:</strong></p>
+                      <div className="d-flex flex-wrap gap-2">
+                        {selectedTutor.subjects.map((subject, index) => (
+                          <span key={index} className="badge bg-secondary">{subject}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <h6 className="fw-bold text-primary">Availability</h6>
+                      {tutorAvailability.length > 0 ? (
+                        <div className="availability-list">
+                          {tutorAvailability.map((avail, index) => (
+                            <div key={index} className="mb-3 p-3 border rounded">
+                              <h6 className="fw-semibold text-success">{getWeekdayName(avail.weekday)}</h6>
+                              <div className="time-slots">
+                                {avail.slots.map((slot, slotIndex) => (
+                                  <span 
+                                    key={slotIndex} 
+                                    className="badge bg-light text-dark me-2 mb-1"
+                                  >
+                                    {formatTime(slot.startMinutes)} - {formatTime(slot.endMinutes)}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted">No availability information available</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button 
+                    type="button" 
+                    className="btn btn-success"
+                    onClick={() => {
+                      handleBookSession(selectedTutor._id);
+                      closeTutorModal();
+                    }}
+                  >
+                    Book Session
+                  </button>
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary" 
+                    onClick={closeTutorModal}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
