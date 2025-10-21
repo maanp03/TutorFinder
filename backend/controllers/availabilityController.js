@@ -26,11 +26,15 @@ const upsertAvailability = async (req, res) => {
 
 const getAvailability = async (req, res) => {
   try {
-    const { tutorId, weekday } = req.query;
+    
+    const tutorId = req.params.tutorId || req.query.tutorId;
+    const { weekday } = req.query;
+    
     const filter = {};
     if (tutorId) filter.tutor = tutorId;
     if (weekday !== undefined) filter.weekday = Number(weekday);
-    const docs = await Availability.find(filter);
+    
+    const docs = await Availability.find(filter).sort({ weekday: 1 });
     return res.json(docs);
   } catch (err) {
     console.error(err);
@@ -39,5 +43,3 @@ const getAvailability = async (req, res) => {
 };
 
 module.exports = { upsertAvailability, getAvailability };
-
-

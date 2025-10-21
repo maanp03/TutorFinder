@@ -307,11 +307,14 @@ const TutorDashboard = () => {
         <div style={{ marginTop: 12 }}>
           {availability.length ? (
             <ul style={{ paddingLeft: 16 }}>
-              {availability.map(a => (
-                <li key={`${a._id}`}>
-                  <strong>Weekday {a.weekday}:</strong> {a.slots.map(s => `${String(Math.floor(s.startMinutes/60)).padStart(2,'0')}:${String(s.startMinutes%60).padStart(2,'0')} - ${String(Math.floor(s.endMinutes/60)).padStart(2,'0')}:${String(s.endMinutes%60).padStart(2,'0')}`).join(', ')}
-                </li>
-              ))}
+              {availability.map(a => {
+                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                return (
+                  <li key={`${a._id}`}>
+                    <strong>{days[a.weekday]}:</strong> {a.slots.map(s => `${String(Math.floor(s.startMinutes/60)).padStart(2,'0')}:${String(s.startMinutes%60).padStart(2,'0')} - ${String(Math.floor(s.endMinutes/60)).padStart(2,'0')}:${String(s.endMinutes%60).padStart(2,'0')}`).join(', ')}
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p>No availability set yet.</p>
@@ -475,6 +478,3 @@ const TutorDashboard = () => {
 };
 
 export default TutorDashboard;
-
-
-
