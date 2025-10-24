@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 const TutorDashboard = () => {
   const [profile, setProfile] = useState(null);
   const [sessions, setSessions] = useState([]);
+  const [allSessions, setAllSessions] = useState([]);
   const [availability, setAvailability] = useState([]);
   const [weekday, setWeekday] = useState(1);
   const [slotsText, setSlotsText] = useState("09:00-12:00, 14:00-16:00");
@@ -28,6 +29,17 @@ const TutorDashboard = () => {
   const userId = localStorage.getItem("userId");
   const { logout } = useAuth();
   const navigate = useNavigate();
+
+  const [filter, setFilter] = useState("All");
+
+  const applyFilter = (btnText) => {
+    setSessions(
+      allSessions.filter((session) => {
+        if (btnText === "All") return true;
+        return session.status === btnText.toLowerCase();
+      })
+    );
+  };
 
   // Fetch tutor profile
   useEffect(() => {
@@ -57,6 +69,7 @@ const TutorDashboard = () => {
             params: { tutorId: profile._id },
           });
           setSessions(res.data);
+          setAllSessions(res.data);
         } catch (err) {
           setError("Failed to fetch sessions.");
           console.error("Error fetching sessions:", err);
@@ -623,59 +636,99 @@ const TutorDashboard = () => {
         }}
       >
         <h3>My Sessions</h3>
+        <div
+          className="filter-bar"
+          style={{ marginBottom: 16, display: "flex", gap: 8 }}
+        >
+          {["All", "Accepted", "Rejected", "Pending"].map((btnText) => (
+            <button
+              key={btnText}
+              onClick={() => {
+                setFilter(btnText);
+                applyFilter(btnText);
+              }}
+              style={{
+                backgroundColor: filter === btnText ? "#007bff" : "#f1f1f1",
+                color: filter === btnText ? "white" : "black",
+                padding: "8px 14px",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+              }}
+            >
+              {btnText}
+            </button>
+          ))}
+        </div>
+
         {sessions.length > 0 ? (
-          <ul style={{ listStyle: "none", padding: "0" }}>
-            {sessions.map((session) => (
-              <li
-                key={session._id}
-                style={{
-                  marginBottom: "10px",
-                  padding: "10px",
-                  border: "1px solid #ddd",
-                  borderRadius: "5px",
-                }}
-              >
-                <strong>Date:</strong>{" "}
-                {new Date(session.date).toLocaleDateString()} <br />
-                <strong>Time:</strong>{" "}
-                {new Date(session.date).toLocaleTimeString()} <br />
-                <strong>Duration:</strong> {session.duration} min <br />
-                <strong>Client ID:</strong>{" "}
-                {session.client?._id || session.client} <br />
-                <strong>Client Name:</strong> {session.client?.name || "N/A"}{" "}
-                <br />
-                <strong>Status:</strong> {session.status || "pending"}
-                {(session.status === "pending" || session.status == null) && (
-                  <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
-                    <button
-                      onClick={() => openDecision("accept", session._id)}
-                      style={{
-                        backgroundColor: "#28a745",
-                        color: "white",
-                        padding: "8px 12px",
-                        border: "none",
-                        borderRadius: 6,
-                      }}
-                    >
-                      Accept
-                    </button>
-                    <button
-                      onClick={() => openDecision("reject", session._id)}
-                      style={{
-                        backgroundColor: "#dc3545",
-                        color: "white",
-                        padding: "8px 12px",
-                        border: "none",
-                        borderRadius: 6,
-                      }}
-                    >
-                      Reject
-                    </button>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
+          <table className="table table-striped table-bordered mt-3">
+            <thead className="table-light">
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Date</th>
+                <th scope="col">Time</th>
+                <th scope="col">Duration</th>
+                <th scope="col">Client ID</th>
+                <th scope="col">Client Name</th>
+                <th scope="col">Status</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {sessions.length > 0 ? (
+                sessions.map((session, index) => (
+                  <tr key={session._id}>
+                    <th scope="row">{index + 1}</th>
+                    <td>{new Date(session.date).toLocaleDateString()}</td>
+                    <td>{new Date(session.date).toLocaleTimeString()}</td>
+                    <td>{session.duration} min</td>
+                    <td>{session.client?._id || session.client}</td>
+                    <td>{session.client?.name || "N/A"}</td>
+                    <td>
+                      <span
+                        className={`badge ${
+                          session.status === "accepted"
+                            ? "bg-success"
+                            : session.status === "rejected"
+                            ? "bg-danger"
+                            : "bg-warning text-dark"
+                        }`}
+                      >
+                        {session.status || "pending"}
+                      </span>
+                    </td>
+                    <td>
+                      {(session.status === "pending" ||
+                        session.status == null) && (
+                        <div className="d-flex gap-2">
+                          <button
+                            className="btn btn-success btn-sm"
+                            onClick={() => openDecision("accept", session._id)}
+                          >
+                            Accept
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => openDecision("reject", session._id)}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="8" className="text-center">
+                    No sessions booked yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         ) : (
           <p>No sessions booked yet.</p>
         )}
