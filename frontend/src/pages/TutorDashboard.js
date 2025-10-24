@@ -246,17 +246,49 @@ const TutorDashboard = () => {
   const submitDecision = async () => {
     const { action, sessionId } = decisionModal;
     if (!action || !sessionId) return;
-    if (action === "accept") {
-      await handleAccept(sessionId);
-    } else {
-      await handleReject(sessionId);
+
+    try {
+      // Perform the backend action
+      if (action === "accept") {
+        await handleAccept(sessionId);
+      } else {
+        await handleReject(sessionId);
+      }
+
+      // Update the frontend sessions state immediately
+      setSessions((prevSessions) =>
+        prevSessions.map((session) =>
+          session._id === sessionId
+            ? {
+                ...session,
+                status: action === "accept" ? "accepted" : "rejected",
+              }
+            : session
+        )
+      );
+
+      // update the backup 'allSessions' list when filtering
+      setAllSessions((prevAll) =>
+        prevAll.map((session) =>
+          session._id === sessionId
+            ? {
+                ...session,
+                status: action === "accept" ? "accepted" : "rejected",
+              }
+            : session
+        )
+      );
+
+      // Close the modal
+      setDecisionModal({
+        open: false,
+        sessionId: null,
+        action: null,
+        message: "",
+      });
+    } catch (error) {
+      console.error("Error updating session:", error);
     }
-    setDecisionModal({
-      open: false,
-      sessionId: null,
-      action: null,
-      message: "",
-    });
   };
 
   const closeDecision = () =>
