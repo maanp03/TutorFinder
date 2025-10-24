@@ -108,7 +108,7 @@ const AdminDashboard = () => {
                   <th>Tutor</th>
                   <th>Client</th>
                   <th>Date</th>
-                  <th>Duration (hours)</th>
+                  <th>Duration (mins)</th>
                   <th>Status</th>
                 </tr>
               </thead>
