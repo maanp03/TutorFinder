@@ -37,6 +37,7 @@ const Navbar = () => {
   };
 
   return (
+    // NAV BAR 
     <nav className="navbar">
       <div className="navbar-container">
         {}

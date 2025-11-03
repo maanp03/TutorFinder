@@ -3,7 +3,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 24px;
-  background: linear-gradient(180deg, #777 0%, #666 100%);
+  background:#9d9d9d;
   color: #fff;
   position: sticky;
   top: 0;
@@ -26,6 +26,7 @@
 }
   
 .navbar-logo {
+  margin-right: -60px;
   font-size: 22px;
   font-weight: 800;
   letter-spacing: 0.4px;
@@ -46,10 +47,11 @@
 }
   
 .login-button, .logout-button, .navbar button {
-  background-color: #007bff; /* keep primary blue */
+  background-color: #0d6efd; /* keep primary blue */
   color: #fff;
   border: 1px solid rgba(255,255,255,0.2);
   padding: 8px 12px;
+  margin-right: 15px;
   cursor: pointer;
   border-radius: 8px;
   text-decoration: none;

@@ -4,6 +4,7 @@ import axios from '../api/axiosInstance';
 import './HomePage.css';
 import { AuthContext } from '../context/AuthContext';
 
+//HOME PAGE
 const HomePage = () => {
   const navigate = useNavigate();
   const { login: contextLogin } = useContext(AuthContext);
@@ -96,19 +97,26 @@ const HomePage = () => {
     }
   };
 
+  // LANDING PAGE UI
   return (
     <div className="container">
       <div className="left">
         <div className="leftOverlay">
-          <h1 className="tagline">Empower Your Learning</h1>
+          <h1 className="tagline">Empower Your Learning with TutorFinder </h1>
           <p className="description">
             Discover the right tutor to excel in your studies. TutorFinder connects you with experienced tutors for personalized academic support.
           </p>
         </div>
         <img 
-          src="/images/man-2562325_1920.jpg"
+          src="/images/tutorimage.jpg"
           alt="Studying Student"
           className="image"
+            style={{
+    width: "100%",  
+    height: "100%",
+    display: "block",
+
+  }}
         />
       </div>
       <div className="right">

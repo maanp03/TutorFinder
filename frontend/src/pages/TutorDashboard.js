@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
 
+//TUTOR DASHBOARD
+
 const TutorDashboard = () => {
   const [profile, setProfile] = useState(null);
   const [sessions, setSessions] = useState([]);
@@ -41,7 +43,7 @@ const TutorDashboard = () => {
     );
   };
 
-  // Fetch tutor profile
+  //TUTOR PROFILE
   useEffect(() => {
     const fetchProfile = async () => {
       setIsLoading(true);
@@ -59,7 +61,7 @@ const TutorDashboard = () => {
     fetchProfile();
   }, [userId]);
 
-  // Fetch sessions if profile exists
+  //TUTOR SESSIONS IF IT EXISTS
   useEffect(() => {
     const fetchSessions = async () => {
       if (profile?._id) {
@@ -82,7 +84,7 @@ const TutorDashboard = () => {
     fetchSessions();
   }, [profile]);
 
-  // Fetch availability
+  // GET TUTOR AVAILABILITY
   useEffect(() => {
     const fetchAvailability = async () => {
       if (profile?._id) {
@@ -160,7 +162,7 @@ const TutorDashboard = () => {
     }
   };
 
-  // Handle profile creation or update
+  //PROFILE CREATION OR DELETION
   const handleCreateOrUpdateProfile = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -248,7 +250,7 @@ const TutorDashboard = () => {
     if (!action || !sessionId) return;
 
     try {
-      // Perform the backend action
+      //BACKEND ACTION
       if (action === "accept") {
         await handleAccept(sessionId);
       } else {
@@ -279,7 +281,7 @@ const TutorDashboard = () => {
         )
       );
 
-      // Close the modal
+      //CLOSE THE MODEL
       setDecisionModal({
         open: false,
         sessionId: null,
@@ -299,7 +301,7 @@ const TutorDashboard = () => {
       message: "",
     });
 
-  // Show profile form with existing data
+  //PROFILE FROM EXISTING DATA
   const handleShowForm = () => {
     if (profile) {
       setFormName(profile.name || "");
@@ -308,7 +310,7 @@ const TutorDashboard = () => {
     }
     setShowProfileForm(true);
   };
-  // delete account function added
+  //DELETE ACCOUNT
   const handleDeleteAccount = async () => {
     try {
       await axios.delete("/tutor/account");
@@ -378,7 +380,7 @@ const TutorDashboard = () => {
           </>
         ) : (
           <>
-            <p>No tutor profile found. Let's create one!</p>
+            <p>No tutor profile found. Create a new one.</p>
             <button
               onClick={handleShowForm}
               style={{
@@ -416,6 +418,10 @@ const TutorDashboard = () => {
         >
           <div>
             <label>Weekday</label>
+            <br>
+            </br>
+            <br>
+            </br>
             <select
               value={weekday}
               onChange={(e) => setWeekday(e.target.value)}
@@ -436,7 +442,7 @@ const TutorDashboard = () => {
             </select>
           </div>
           <div>
-            <label>Time Slots (e.g., 09:00-12:00, 14:00-16:00)</label>
+            <label>Time Slots (e.g., 09:00-12:00, 14:00-16:00,)</label>
             <input
               value={slotsText}
               onChange={(e) => setSlotsText(e.target.value)}
@@ -497,7 +503,7 @@ const TutorDashboard = () => {
               })}
             </ul>
           ) : (
-            <p>No availability set yet.</p>
+            <p> No availability has been set yet. Please choose an availability.</p>
           )}
         </div>
       </div>
