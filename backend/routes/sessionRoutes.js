@@ -9,4 +9,9 @@ router.post('/:id/accept', jwtMiddleware, acceptSession);
 router.post('/:id/reject', jwtMiddleware, rejectSession);
 router.post('/:id/cancel', jwtMiddleware, cancelSession);
 
+// Support PATCH verbs for compatibility
+router.patch('/:id/accept', jwtMiddleware, acceptSession);
+router.patch('/:id/reject', jwtMiddleware, rejectSession);
+router.patch('/:id/cancel', jwtMiddleware, cancelSession);
+
 module.exports = router;

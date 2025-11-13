@@ -12,6 +12,7 @@ const AdminDashboard = () => {
   const [clients, setClients] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [error, setError] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     axios.get('/admin/tutors')
@@ -42,6 +43,23 @@ const AdminDashboard = () => {
       setClients(clients.filter(client => client._id !== clientId));
     } catch {
       setError('Failed to delete client');
+    }
+  };
+
+  const cancelSession = async (sessionId) => {
+    const reason = window.prompt('Optional reason for cancelling this session:', '');
+    setIsCancelling(true);
+    try {
+      const res = await axios.post(`/sessions/${sessionId}/cancel`, {
+        reason: reason || undefined,
+      });
+      setSessions(prev =>
+        prev.map(session => (session._id === sessionId ? res.data : session))
+      );
+    } catch {
+      setError('Failed to cancel session');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -110,6 +128,7 @@ const AdminDashboard = () => {
                   <th>Date</th>
                   <th>Duration (mins)</th>
                   <th>Status</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -120,12 +139,27 @@ const AdminDashboard = () => {
                     <td>{new Date(session.date).toLocaleDateString()}</td>
                     <td>{session.duration}</td>
                     <td>
-                      <span className="badge bg-success">{session.status}</span>
+                      <span className={`badge ${session.status === 'cancelled' ? 'bg-secondary' : 'bg-success'}`}>
+                        {session.status}
+                      </span>
+                    </td>
+                    <td>
+                      {session.status !== 'cancelled' ? (
+                        <button
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => cancelSession(session._id)}
+                          disabled={isCancelling}
+                        >
+                          Cancel
+                        </button>
+                      ) : (
+                        <span className="text-muted">Cancelled</span>
+                      )}
                     </td>
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan="5" className="text-center">No accepted sessions found.</td>
+                    <td colSpan="6" className="text-center">No accepted sessions found.</td>
                   </tr>
                 )}
               </tbody>

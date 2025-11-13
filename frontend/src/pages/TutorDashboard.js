@@ -239,6 +239,18 @@ const TutorDashboard = () => {
     }
   };
 
+  const handleCancelSession = async (id) => {
+    try {
+      const res = await axios.post(`/sessions/${id}/cancel`, {
+        reason: decisionModal.message || undefined,
+      });
+      setSessions((prev) => prev.map((s) => (s._id === id ? res.data : s)));
+    } catch (e) {
+      console.error(e);
+      alert("Failed to cancel session");
+    }
+  };
+
   const openDecision = (action, id) => {
     setDecisionModal({ open: true, sessionId: id, action, message: "" });
   };
@@ -248,36 +260,45 @@ const TutorDashboard = () => {
     if (!action || !sessionId) return;
 
     try {
+      let nextStatus = null;
+
       // Perform the backend action
       if (action === "accept") {
         await handleAccept(sessionId);
-      } else {
+        nextStatus = "accepted";
+      } else if (action === "reject") {
         await handleReject(sessionId);
+        nextStatus = "rejected";
+      } else if (action === "cancel") {
+        await handleCancelSession(sessionId);
+        nextStatus = "cancelled";
       }
 
-      // Update the frontend sessions state immediately
-      setSessions((prevSessions) =>
-        prevSessions.map((session) =>
-          session._id === sessionId
-            ? {
-                ...session,
-                status: action === "accept" ? "accepted" : "rejected",
-              }
-            : session
-        )
-      );
+      if (nextStatus) {
+        // Update the frontend sessions state immediately
+        setSessions((prevSessions) =>
+          prevSessions.map((session) =>
+            session._id === sessionId
+              ? {
+                  ...session,
+                  status: nextStatus,
+                }
+              : session
+          )
+        );
 
-      // update the backup 'allSessions' list when filtering
-      setAllSessions((prevAll) =>
-        prevAll.map((session) =>
-          session._id === sessionId
-            ? {
-                ...session,
-                status: action === "accept" ? "accepted" : "rejected",
-              }
-            : session
-        )
-      );
+        // update the backup 'allSessions' list when filtering
+        setAllSessions((prevAll) =>
+          prevAll.map((session) =>
+            session._id === sessionId
+              ? {
+                  ...session,
+                  status: nextStatus,
+                }
+              : session
+          )
+        );
+      }
 
       // Close the modal
       setDecisionModal({
@@ -749,6 +770,14 @@ const TutorDashboard = () => {
                           </button>
                         </div>
                       )}
+                      {session.status === "accepted" && (
+                        <button
+                          className="btn btn-outline-danger btn-sm"
+                          onClick={() => openDecision("cancel", session._id)}
+                        >
+                          Cancel Session
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -830,7 +859,9 @@ const TutorDashboard = () => {
                 placeholder={
                   decisionModal.action === "accept"
                     ? "e.g., Looking forward to our session!"
-                    : "e.g., I’m unavailable at that time, please pick another slot."
+                    : decisionModal.action === "reject"
+                    ? "e.g., I’m unavailable at that time, please pick another slot."
+                    : "Optional note explaining why you are cancelling."
                 }
                 style={{
                   width: "100%",
@@ -866,14 +897,20 @@ const TutorDashboard = () => {
                 onClick={submitDecision}
                 style={{
                   background:
-                    decisionModal.action === "accept" ? "#28a745" : "#dc3545",
+                    decisionModal.action === "accept"
+                      ? "#28a745"
+                      : "#dc3545",
                   color: "#fff",
                   border: "none",
                   borderRadius: 8,
                   padding: "10px 14px",
                 }}
               >
-                {decisionModal.action === "accept" ? "Accept" : "Reject"}
+                {decisionModal.action === "accept"
+                  ? "Accept"
+                  : decisionModal.action === "reject"
+                  ? "Reject"
+                  : "Confirm Cancel"}
               </button>
             </div>
           </div>
