@@ -159,7 +159,7 @@ const Navbar = () => {
                               background: n.read ? "#f8f9fb" : "#fff",
                             }}
                           >
-                            <div style={{ fontWeight: 600, fontSize: 14 }}>
+                            <div style={{ fontWeight: 600, fontSize: 14, color: '#000' }}>
                               {n.message}
                             </div>
                             <div style={{ fontSize: 12, color: "#6c757d" }}>
