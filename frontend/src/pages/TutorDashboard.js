@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
+import Chatbot from "../components/Chatbot";
 
 const TutorDashboard = () => {
   const [profile, setProfile] = useState(null);
@@ -916,6 +917,7 @@ const TutorDashboard = () => {
           </div>
         </div>
       )}
+      <Chatbot />
     </div>
   );
 };
