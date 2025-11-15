@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import Chatbot from '../components/Chatbot';
  
 // Bootstrap CDN
 const bootstrapLink = document.createElement("link");
@@ -490,6 +491,7 @@ const ClientDashboard = () => {
           </div>
         )}
       </div>
+      <Chatbot />
     </div>
   );
 };
