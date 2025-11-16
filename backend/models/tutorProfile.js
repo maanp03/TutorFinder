@@ -7,4 +7,4 @@ const TutorSchema = new mongoose.Schema({
   subjects: [{ type: String }],
 });
 
-module.exports = mongoose.model('Tutor', TutorSchema);
+module.exports = mongoose.models.Tutor || mongoose.model('Tutor', TutorSchema);

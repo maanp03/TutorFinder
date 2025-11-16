@@ -10,7 +10,9 @@ document.head.appendChild(bootstrapLink);
 const AdminDashboard = () => {
   const [tutors, setTutors] = useState([]);
   const [clients, setClients] = useState([]);
+  const [sessions, setSessions] = useState([]);
   const [error, setError] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     axios.get('/admin/tutors')
@@ -20,6 +22,10 @@ const AdminDashboard = () => {
     axios.get('/admin/clients')
       .then(res => setClients(res.data))
       .catch(() => setError('Failed to fetch clients'));
+
+    axios.get('/admin/sessions')
+      .then(res => setSessions(res.data))
+      .catch(() => setError('Failed to fetch sessions'));
   }, []);
 
   const deleteTutor = async (tutorId) => {
@@ -37,6 +43,23 @@ const AdminDashboard = () => {
       setClients(clients.filter(client => client._id !== clientId));
     } catch {
       setError('Failed to delete client');
+    }
+  };
+
+  const cancelSession = async (sessionId) => {
+    const reason = window.prompt('Optional reason for cancelling this session:', '');
+    setIsCancelling(true);
+    try {
+      const res = await axios.post(`/sessions/${sessionId}/cancel`, {
+        reason: reason || undefined,
+      });
+      setSessions(prev =>
+        prev.map(session => (session._id === sessionId ? res.data : session))
+      );
+    } catch {
+      setError('Failed to cancel session');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -84,6 +107,59 @@ const AdminDashboard = () => {
                 )) : (
                   <tr>
                     <td colSpan="4" className="text-center">No tutors found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Sessions Table */}
+        <div className="card shadow mb-5">
+          <div className="card-header bg-success text-white text-center fw-semibold">
+            Accepted Sessions
+          </div>
+          <div className="card-body p-0">
+            <table className="table table-hover mb-0 text-center">
+              <thead className="table-light">
+                <tr>
+                  <th>Tutor</th>
+                  <th>Client</th>
+                  <th>Date</th>
+                  <th>Duration (mins)</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sessions.length > 0 ? sessions.map(session => (
+                  <tr key={session._id}>
+                    <td>{session.tutor?.name || 'N/A'}</td>
+                    <td>{session.client?.name || 'N/A'}</td>
+                    <td>{new Date(session.date).toLocaleDateString()}</td>
+                    <td>{session.duration}</td>
+                    <td>
+                      <span className={`badge ${session.status === 'cancelled' ? 'bg-secondary' : 'bg-success'}`}>
+                        {session.status}
+                      </span>
+                    </td>
+                    <td>
+                      {session.status !== 'cancelled' ? (
+                        <button
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => cancelSession(session._id)}
+                          disabled={isCancelling}
+                        >
+                          Cancel
+                        </button>
+                      ) : (
+                        <span className="text-muted">Cancelled</span>
+                      )}
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="6" className="text-center">No accepted sessions found.</td>
                   </tr>
                 )}
               </tbody>

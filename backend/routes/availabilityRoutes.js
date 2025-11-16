@@ -5,6 +5,7 @@ const jwtMiddleware = require('../middleware/JwtMiddleware');
 
 router.post('/', jwtMiddleware, upsertAvailability);
 router.get('/', getAvailability);
+router.get('/tutor/:tutorId', getAvailability);
 
 module.exports = router;
 
