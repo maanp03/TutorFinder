@@ -43,10 +43,21 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-container">
         {}
-        <div className="navbar-logo-container">
-          <div className="navbar-logo" onClick={() => navigate("/")}>
-            TutorFinder
-          </div>
+
+        <div
+        className="navbar-logo-container"
+        onClick={() => navigate("/")}
+        style={{ cursor: "pointer" }}
+        >
+          <img
+          src="/images/tutorfinder.png"
+          alt="TutorFinder Logo"
+          className="navbar-logo"
+          style={{
+            height: "60px", 
+            width: "auto"
+            }}
+          />
         </div>
 
         {}
@@ -182,9 +193,14 @@ const Navbar = () => {
               </button>
             </>
           ) : (
-            <Link to="/login" className="login-button">
+
+            <Link to="/login" className="login-button"
+            style={{
+              marginRight:"20px"
+            }}>
               Login
             </Link>
+            
           )}
         </div>
       </div>
