@@ -1,62 +1,126 @@
+/* ---------------- NAVBAR MAIN ---------------- */
 .navbar {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding: 12px 24px;
-  color: #000000;
+  color: #797589;
   position: sticky;
   top: 0;
   z-index: 1000;
-
 }
-  
+
+/* Container */
 .navbar-container {
   display: flex;
   width: 100%;
+  max-width: 1400px;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
 }
-  
+
+/* ---------------- LOGO ---------------- */
 .navbar-logo-container {
   display: flex;
   justify-content: flex-start;
 }
 
 .navbar-logo {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: 0.4px;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
   cursor: pointer;
   user-select: none;
+
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.28);
+  transition: transform 0.15s ease;
 }
-  
+
+.navbar-logo:hover {
+  transform: scale(1.05);
+}
+
+/* ---------------- SEARCH BAR ---------------- */
+.navbar-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-grow: 1;
+  max-width: 360px;
+}
+
+.navbar-search input,
+.search-subject {
+  flex-grow: 1;
+  padding: 8px 12px;
+  border: 1px solid #aaa;
+  background: #fff;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.navbar-search input:focus,
+.search-subject:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 6px rgba(0, 123, 255, 0.4);
+}
+
+.navbar-search button {
+  padding: 8px 14px !important;
+  border-radius: 8px !important;
+  border: none;
+  background: #007bff;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.navbar-search button:hover {
+  background-color: #0066d6;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+/* ---------------- NAVBAR LINKS ---------------- */
 .navbar-links {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
-  
+
 .navbar-username {
-  margin-right: 6px;
   font-size: 15px;
+  font-weight: 500;
+  margin-right: 4px;
   opacity: 0.95;
 }
-  
-.login-button, .logout-button, .navbar button {
-  background-color: #007bff; /* keep primary blue */
+
+/* ---------------- BUTTONS ---------------- */
+.login-button,
+.logout-button,
+.navbar button {
+  background-color: #007bff;
   color: #fff;
-  border: 1px solid rgba(255,255,255,0.2);
-  padding: 8px 12px;
+  border: none;
+  padding: 8px 14px;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 10px;
   text-decoration: none;
-  transition: transform 0.06s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 1px 6px rgba(0,0,0,0.08);
+
+  transition: background-color 0.2s ease, transform 0.08s ease,
+    box-shadow 0.2s ease;
+
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
 }
-  
-.login-button:hover, .logout-button:hover, .navbar button:hover {
-  background-color: #0062cc;
+
+.login-button:hover,
+.logout-button:hover,
+.navbar button:hover {
+  background-color: #0066d6;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
 }
 
 .navbar button:active,
@@ -65,10 +129,17 @@
   transform: translateY(1px);
 }
 
+/* ---------------- MOBILE ---------------- */
 @media (max-width: 768px) {
   .navbar {
     padding: 10px 16px;
   }
+
+  .navbar-container {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
   .navbar-logo {
     font-size: 20px;
   }

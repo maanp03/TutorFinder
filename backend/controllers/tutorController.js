@@ -1,23 +1,20 @@
-const User = require('../models/User');
-const Tutor = require('../models/tutorProfile');
-
+const User = require("../models/User");
+const Tutor = require("../models/tutorProfile");
 
 const createTutorProfile = async (req, res) => {
   const { name, bio, subjects } = req.body;
   const userId = req.user?.user?.id;
 
   if (!userId) {
-    return res.status(400).json({ msg: 'User not authenticated properly' });
+    return res.status(400).json({ msg: "User not authenticated properly" });
   }
 
   try {
-  
     const user = await User.findById(userId);
-    if (!user || user.role !== 'tutor') {
-      return res.status(400).json({ msg: 'Invalid tutor ID' });
+    if (!user || user.role !== "tutor") {
+      return res.status(400).json({ msg: "Invalid tutor ID" });
     }
 
-  
     let tutorProfile = await Tutor.findOne({ user: userId });
     if (!tutorProfile) {
       tutorProfile = new Tutor({
@@ -36,57 +33,85 @@ const createTutorProfile = async (req, res) => {
     return res.json(tutorProfile);
   } catch (err) {
     console.error(err.message);
-    return res.status(500).send('Server error');
+    return res.status(500).send("Server error");
   }
 };
 
 const getTutorProfile = async (req, res) => {
   try {
-    const tutorProfile = await Tutor.findOne({ user: req.params.userId })
-      .populate('user', ['name', 'email']);
+    const tutorProfile = await Tutor.findOne({
+      user: req.params.userId,
+    }).populate("user", ["name", "email"]);
 
     if (!tutorProfile) {
-      return res.status(400).json({ msg: 'Tutor profile not found' });
+      return res.status(400).json({ msg: "Tutor profile not found" });
     }
     return res.json(tutorProfile);
   } catch (err) {
     console.error(err.message);
-    return res.status(500).send('Server error');
+    return res.status(500).send("Server error");
   }
 };
 
 const getAllTutors = async (req, res) => {
   try {
-    const tutors = await Tutor.find().populate('user', ['name', 'email']);
+    const tutors = await Tutor.find().populate("user", ["name", "email"]);
     return res.json(tutors);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ msg: 'Server error' });
+    return res.status(500).json({ msg: "Server error" });
   }
 };
+
+const searchTutorsBySubject = async (req, res) => {
+  try {
+    const subjectQuery = req.query.subject;
+
+    if (!subjectQuery) {
+      return res.status(400).json({ msg: "No subject provided in query" });
+    }
+
+    // Case-insensitive search inside subjects array
+    const tutors = await Tutor.find({
+      subjects: {
+        $regex: new RegExp(subjectQuery, "i"),
+      },
+    }).populate("user", ["name", "email"]);
+
+    if (tutors.length === 0) {
+      return res.status(404).json({ msg: "No tutors found for this subject" });
+    }
+
+    return res.json(tutors);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ msg: "Server error" });
+  }
+};
+
 //tutor delete account
 const deleteAccount = async (req, res) => {
   const userId = req.user?.user?.id;
 
   if (!userId) {
-    return res.status(400).json({ msg: 'User not authenticated properly' });
+    return res.status(400).json({ msg: "User not authenticated properly" });
   }
 
   try {
     // Verify user is a tutor
     const user = await User.findById(userId);
-    if (!user || user.role !== 'tutor') {
-      return res.status(400).json({ msg: 'Invalid tutor ID' });
+    if (!user || user.role !== "tutor") {
+      return res.status(400).json({ msg: "Invalid tutor ID" });
     }
 
     // Find tutor profile
     const tutor = await Tutor.findOne({ user: userId });
     if (!tutor) {
-      return res.status(404).json({ msg: 'Tutor not found' });
+      return res.status(404).json({ msg: "Tutor not found" });
     }
 
     // Import Session model for cascade deletion
-    const Session = require('../models/session');
+    const Session = require("../models/session");
 
     // Delete user account first
     await User.findByIdAndDelete(userId);
@@ -97,10 +122,10 @@ const deleteAccount = async (req, res) => {
     // Delete all sessions associated with this tutor
     await Session.deleteMany({ tutor: tutor._id });
 
-    res.json({ msg: 'Tutor and all associated data deleted successfully' });
+    res.json({ msg: "Tutor and all associated data deleted successfully" });
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Server error');
+    res.status(500).send("Server error");
   }
 };
 
@@ -109,4 +134,5 @@ module.exports = {
   getTutorProfile,
   getAllTutors,
   deleteAccount,
+  searchTutorsBySubject,
 };

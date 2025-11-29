@@ -2,7 +2,7 @@ import axios from "axios";
 
 const instance = axios.create({
   //baseURL: 'http://localhost:5000/api', //this is the local url
-  baseURL: "https://tutorfinder-dk85.onrender.com/api", // this is the cloud api url
+  baseURL: "http://localhost:5000/api", // this is the cloud api url
 });
 
 instance.interceptors.request.use(
