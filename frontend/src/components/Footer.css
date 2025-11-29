@@ -1,0 +1,151 @@
+/*FOOTER CSS*/
+.footer {
+  background-color: #3357a0;    
+  color: #ffffff;
+  padding: 60px 0 20px;
+  font-family: Arial, sans-serif;
+  margin-top: 80px;
+}
+
+.f-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 40px;
+  padding: 0 40px;
+}
+
+.info-section {
+  font-size: 14px;
+}
+
+.footer-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.footer-subtitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.footer-text {
+  font-size: 14px;
+  opacity: 0.85;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.footer-mail {
+  font-size: 14px;
+  margin-bottom: 6px;
+  opacity: 0.9;
+}
+
+.info-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0 0;
+}
+
+.info-section li {
+  margin-bottom: 8px;
+  opacity: 0.9;
+  transition: color 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
+}
+
+.info-section li:hover {
+  opacity: 1;
+  color: #71aae8;
+  transform: translateX(2px);
+}
+.f-socials {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.app-icon {
+  font-size: 28px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+.app-icon:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  color: #4fa3ff;
+}
+.subscribtion-b {
+  display: flex;
+  margin-top: 14px;
+}
+
+.subscribe-input {
+  padding: 10px 12px;
+  border-radius: 6px 0 0 6px;
+  border: none;
+  width: 70%;
+  font-size: 14px;
+}
+
+.subscribe-btn {
+  background-color: #e86d4e;
+  border: none;
+  padding: 10px 18px;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 0 6px 6px 0;
+  cursor: pointer;
+}
+
+.footer-bottom {
+  text-align: center;
+  margin-top: 40px;
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .footer-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+    padding: 0 24px;
+  }
+}
+
+@media (max-width: 600px) {
+  .footer-container {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .footer-section {
+    align-items: center;
+  }
+
+  .footer-socials {
+    justify-content: center;
+  }
+
+  .subscribtion-b {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .subscribe-input {
+    width: 100%;
+    border-radius: 6px;
+    margin-bottom: 10px;
+  }
+
+  .subscribe-btn {
+    border-radius: 6px;
+    width: 100%;
+  }
+}

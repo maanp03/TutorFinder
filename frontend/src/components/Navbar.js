@@ -6,9 +6,28 @@ import "./Navbar.css";
 const Navbar = () => {
   const { auth, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
+
+  // Search state
+  const [subject, setSubject] = useState("");
+  const subjectsList = [
+    "Python",
+    "Java",
+    "JavaScript",
+    "C",
+    "C++",
+    "C#",
+    "HTML",
+    "CSS",
+    "JavaScript",
+    "React",
+    "Angular",
+    "Node.js",
+    "Express.js",
+  ];
 
   useEffect(() => {
     if (!auth.token) return;
@@ -16,7 +35,7 @@ const Navbar = () => {
     const poll = async () => {
       try {
         const res = await fetch(
-          "https://tutorfinder-dk85.onrender.com/api/notifications" /*http://localhost:5000/api/notifications*/,
+          "https://tutorfinder-dk85.onrender.com/api/notifications",
           {
             headers: { Authorization: `Bearer ${auth.token}` },
           }
@@ -39,24 +58,59 @@ const Navbar = () => {
     navigate("/");
   };
 
+  const handleSearch = () => {
+    if (!subject) return; // prevent empty search
+    navigate(`/search?subject=${encodeURIComponent(subject)}`);
+  };
+
   return (
     <nav className="navbar">
       <div className="navbar-container">
         {}
-        <div className="navbar-logo-container">
-          <div className="navbar-logo" onClick={() => navigate("/")}>
-            TutorFinder
-          </div>
+
+        <div
+          className="navbar-logo-container"
+          onClick={() => navigate("/")}
+          style={{ cursor: "pointer" }}
+        >
+          <img
+            src="/images/tutorfinder.png"
+            alt="TutorFinder Logo"
+            className="navbar-logo"
+            style={{
+              height: "100px",
+              width: "auto",
+            }}
+          />
         </div>
 
-        {}
+        {/* SEARCH BAR */}
+        {auth.token ? (
+          <div className="navbar-search">
+            <select
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="search-subject"
+            >
+              <option value="">Select Subject</option>
+              {subjectsList.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+            <button onClick={handleSearch}>Search</button>
+          </div>
+        ) : (
+          ""
+        )}
+
+        {/* Right Side Links */}
         <div className="navbar-links">
           {auth.token ? (
             <>
-              {}
               <span className="navbar-username">{auth.name}</span>
 
-              {}
               {auth.role === "client" && (
                 <button onClick={() => navigate("/client")}>
                   Client Dashboard
@@ -73,11 +127,12 @@ const Navbar = () => {
                 </button>
               )}
 
-              {/* Bell */}
+              {/* Notifications */}
               <div style={{ position: "relative", marginRight: 8 }}>
                 <button onClick={() => setOpen(!open)} title="Notifications">
-                  514
+                  🔔
                 </button>
+
                 {unreadCount > 0 && (
                   <span
                     style={{
@@ -94,6 +149,7 @@ const Navbar = () => {
                     {unreadCount}
                   </span>
                 )}
+
                 {open && (
                   <div
                     style={{
@@ -122,7 +178,7 @@ const Navbar = () => {
                         onClick={async () => {
                           try {
                             await fetch(
-                              "https://tutorfinder-dk85.onrender.com/api/notifications/read-all" /*'http://localhost:5000/api/notifications/read-all'*/,
+                              "https://tutorfinder-dk85.onrender.com/api/notifications/read-all",
                               {
                                 method: "POST",
                                 headers: {
@@ -148,6 +204,7 @@ const Navbar = () => {
                         Mark all read
                       </button>
                     </div>
+
                     <div style={{ maxHeight: 360, overflowY: "auto" }}>
                       {items.length ? (
                         items.map((n) => (
@@ -159,7 +216,13 @@ const Navbar = () => {
                               background: n.read ? "#f8f9fb" : "#fff",
                             }}
                           >
-                            <div style={{ fontWeight: 600, fontSize: 14, color: '#000' }}>
+                            <div
+                              style={{
+                                fontWeight: 600,
+                                fontSize: 14,
+                                color: "#000",
+                              }}
+                            >
                               {n.message}
                             </div>
                             <div style={{ fontSize: 12, color: "#6c757d" }}>
@@ -182,7 +245,13 @@ const Navbar = () => {
               </button>
             </>
           ) : (
-            <Link to="/login" className="login-button">
+            <Link
+              to="/login"
+              className="login-button"
+              style={{
+                marginRight: "20px",
+              }}
+            >
               Login
             </Link>
           )}
