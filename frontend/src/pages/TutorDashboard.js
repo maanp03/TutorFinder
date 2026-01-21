@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
 import Chatbot from "../components/Chatbot";
+import { FaUser, FaCalendarAlt, FaBell, FaEdit, FaTrash, FaClock, FaCheck, FaTimes, FaSave, FaBook } from 'react-icons/fa';
+import './Dashboard.css';
 
 const TutorDashboard = () => {
   const [profile, setProfile] = useState(null);
@@ -13,910 +15,380 @@ const TutorDashboard = () => {
   const [slotsText, setSlotsText] = useState("09:00-12:00, 14:00-16:00");
   const [notifications, setNotifications] = useState([]);
   const [isMarking, setIsMarking] = useState(false);
-  const [decisionModal, setDecisionModal] = useState({
-    open: false,
-    sessionId: null,
-    action: null,
-    message: "",
-  });
+  const [decisionModal, setDecisionModal] = useState({ open: false, sessionId: null, action: null, message: "" });
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-
   const [formName, setFormName] = useState("");
   const [formBio, setFormBio] = useState("");
   const [formSubjects, setFormSubjects] = useState("");
+  const [filter, setFilter] = useState("All");
 
   const userId = localStorage.getItem("userId");
   const { logout } = useAuth();
   const navigate = useNavigate();
 
-  const [filter, setFilter] = useState("All");
-
   const applyFilter = (btnText) => {
-    setSessions(
-      allSessions.filter((session) => {
-        if (btnText === "All") return true;
-        return session.status === btnText.toLowerCase();
-      })
-    );
+    setSessions(allSessions.filter((s) => btnText === "All" ? true : s.status === btnText.toLowerCase()));
   };
 
-  // Fetch tutor profile
   useEffect(() => {
-    const fetchProfile = async () => {
-      setIsLoading(true);
-      try {
-        const res = await axios.get(`/tutor/profile/${userId}`);
-        setProfile(res.data);
-      } catch (err) {
-        setError("No tutor profile found. Please create one.");
-        console.error("Error fetching profile:", err.response?.data?.msg);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProfile();
+    setIsLoading(true);
+    axios.get(`/tutor/profile/${userId}`)
+      .then((res) => setProfile(res.data))
+      .catch(() => setError("No tutor profile found. Please create one."))
+      .finally(() => setIsLoading(false));
   }, [userId]);
 
-  // Fetch sessions if profile exists
   useEffect(() => {
-    const fetchSessions = async () => {
-      if (profile?._id) {
-        setIsLoading(true);
-        try {
-          const res = await axios.get("/sessions", {
-            params: { tutorId: profile._id },
-          });
-          setSessions(res.data);
-          setAllSessions(res.data);
-        } catch (err) {
-          setError("Failed to fetch sessions.");
-          console.error("Error fetching sessions:", err);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchSessions();
+    if (profile?._id) {
+      setIsLoading(true);
+      axios.get("/sessions", { params: { tutorId: profile._id } })
+        .then((res) => { setSessions(res.data); setAllSessions(res.data); })
+        .catch(() => setError("Failed to fetch sessions."))
+        .finally(() => setIsLoading(false));
+    }
   }, [profile]);
 
-  // Fetch availability
   useEffect(() => {
-    const fetchAvailability = async () => {
-      if (profile?._id) {
-        try {
-          const res = await axios.get("/availability", {
-            params: { tutorId: profile._id },
-          });
-          setAvailability(res.data);
-        } catch (err) {
-          console.error("Error fetching availability:", err);
-        }
-      }
-    };
-    fetchAvailability();
+    if (profile?._id) {
+      axios.get("/availability", { params: { tutorId: profile._id } })
+        .then((res) => setAvailability(res.data))
+        .catch(() => {});
+    }
   }, [profile]);
 
-  // Poll notifications every 10s for tutor as well
   useEffect(() => {
     let timer;
     const poll = async () => {
-      try {
-        const res = await axios.get("/notifications");
-        setNotifications(res.data);
-      } catch (e) {
-        // ignore
-      } finally {
-        timer = setTimeout(poll, 10000);
-      }
+      try { const res = await axios.get("/notifications"); setNotifications(res.data); }
+      catch (e) {}
+      finally { timer = setTimeout(poll, 10000); }
     };
     poll();
     return () => clearTimeout(timer);
   }, []);
 
   const colorByType = (type) => {
-    switch (type) {
-      case "session_request":
-        return "#0d6efd"; // blue
-      case "session_accepted":
-        return "#28a745"; // green
-      case "session_rejected":
-        return "#dc3545"; // red
-      case "session_cancelled":
-        return "#6c757d"; // gray
-      default:
-        return "#0d6efd";
-    }
+    const map = { session_request: "#60a5fa", session_accepted: "#4ade80", session_rejected: "#f87171", session_cancelled: "#9ca3af" };
+    return map[type] || "#60a5fa";
   };
 
   const labelByType = (type) => {
-    switch (type) {
-      case "session_request":
-        return "New Request";
-      case "session_accepted":
-        return "Accepted";
-      case "session_rejected":
-        return "Rejected";
-      case "session_cancelled":
-        return "Cancelled";
-      default:
-        return "Update";
-    }
+    const map = { session_request: "New Request", session_accepted: "Accepted", session_rejected: "Rejected", session_cancelled: "Cancelled" };
+    return map[type] || "Update";
+  };
+
+  const getNotificationType = (type) => {
+    if (type === 'session_accepted') return 'type-accepted';
+    if (type === 'session_rejected') return 'type-rejected';
+    if (type === 'session_cancelled') return 'type-cancelled';
+    return 'type-request';
   };
 
   const markNotificationRead = async (id) => {
-    try {
-      setIsMarking(true);
-      await axios.post(`/notifications/${id}/read`);
-      setNotifications((prev) =>
-        prev.map((n) => (n._id === id ? { ...n, read: true } : n))
-      );
-    } catch (e) {
-      // ignore
-    } finally {
-      setIsMarking(false);
-    }
+    try { setIsMarking(true); await axios.post(`/notifications/${id}/read`); setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, read: true } : n))); }
+    catch {}
+    finally { setIsMarking(false); }
   };
 
-  // Handle profile creation or update
   const handleCreateOrUpdateProfile = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
       const subjectsArray = formSubjects.split(",").map((s) => s.trim());
-
-      const res = await axios.post("/tutor/profile", {
-        name: formName,
-        bio: formBio,
-        subjects: subjectsArray,
-      });
+      const res = await axios.post("/tutor/profile", { name: formName, bio: formBio, subjects: subjectsArray });
       setProfile(res.data);
       setShowProfileForm(false);
-    } catch (err) {
-      setError("Profile update failed. Please try again.");
-      console.error("Profile create/update failed:", err.response?.data);
-    } finally {
-      setIsLoading(false);
-    }
+    } catch { setError("Profile update failed."); }
+    finally { setIsLoading(false); }
   };
 
-  const parseTimeToMinutes = (hhmm) => {
-    const [h, m] = hhmm.split(":").map(Number);
-    return h * 60 + (m || 0);
-  };
+  const parseTimeToMinutes = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + (m || 0); };
 
   const handleSaveAvailability = async (e) => {
     e.preventDefault();
     try {
-      // slotsText: "09:00-12:00, 14:00-16:00"
-      const slots = slotsText
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .map((range) => {
-          const [start, end] = range.split("-").map((t) => t.trim());
-          return {
-            startMinutes: parseTimeToMinutes(start),
-            endMinutes: parseTimeToMinutes(end),
-          };
-        })
-        .filter((s) => s.endMinutes > s.startMinutes);
+      const slots = slotsText.split(",").map((s) => s.trim()).filter(Boolean).map((range) => {
+        const [start, end] = range.split("-").map((t) => t.trim());
+        return { startMinutes: parseTimeToMinutes(start), endMinutes: parseTimeToMinutes(end) };
+      }).filter((s) => s.endMinutes > s.startMinutes);
       await axios.post("/availability", { weekday: Number(weekday), slots });
-      const res = await axios.get("/availability", {
-        params: { tutorId: profile._id },
-      });
+      const res = await axios.get("/availability", { params: { tutorId: profile._id } });
       setAvailability(res.data);
-      alert("Availability saved");
-    } catch (err) {
-      console.error("Failed saving availability", err);
-      alert("Failed to save availability");
-    }
+      alert("Availability saved!");
+    } catch { alert("Failed to save availability"); }
   };
 
-  const handleAccept = async (id) => {
-    try {
-      const res = await axios.post(`/sessions/${id}/accept`, {
-        message: decisionModal.message || undefined,
-      });
-      setSessions((prev) => prev.map((s) => (s._id === id ? res.data : s)));
-    } catch (e) {
-      console.error(e);
-      alert("Failed to accept");
-    }
-  };
+  const handleAccept = async (id) => { const res = await axios.post(`/sessions/${id}/accept`, { message: decisionModal.message || undefined }); setSessions((prev) => prev.map((s) => (s._id === id ? res.data : s))); };
+  const handleReject = async (id) => { const res = await axios.post(`/sessions/${id}/reject`, { message: decisionModal.message || undefined }); setSessions((prev) => prev.map((s) => (s._id === id ? res.data : s))); };
+  const handleCancelSession = async (id) => { const res = await axios.post(`/sessions/${id}/cancel`, { reason: decisionModal.message || undefined }); setSessions((prev) => prev.map((s) => (s._id === id ? res.data : s))); };
 
-  const handleReject = async (id) => {
-    try {
-      const res = await axios.post(`/sessions/${id}/reject`, {
-        message: decisionModal.message || undefined,
-      });
-      setSessions((prev) => prev.map((s) => (s._id === id ? res.data : s)));
-    } catch (e) {
-      console.error(e);
-      alert("Failed to reject");
-    }
-  };
-
-  const handleCancelSession = async (id) => {
-    try {
-      const res = await axios.post(`/sessions/${id}/cancel`, {
-        reason: decisionModal.message || undefined,
-      });
-      setSessions((prev) => prev.map((s) => (s._id === id ? res.data : s)));
-    } catch (e) {
-      console.error(e);
-      alert("Failed to cancel session");
-    }
-  };
-
-  const openDecision = (action, id) => {
-    setDecisionModal({ open: true, sessionId: id, action, message: "" });
-  };
+  const openDecision = (action, id) => setDecisionModal({ open: true, sessionId: id, action, message: "" });
 
   const submitDecision = async () => {
     const { action, sessionId } = decisionModal;
     if (!action || !sessionId) return;
-
     try {
       let nextStatus = null;
-
-      // Perform the backend action
-      if (action === "accept") {
-        await handleAccept(sessionId);
-        nextStatus = "accepted";
-      } else if (action === "reject") {
-        await handleReject(sessionId);
-        nextStatus = "rejected";
-      } else if (action === "cancel") {
-        await handleCancelSession(sessionId);
-        nextStatus = "cancelled";
-      }
-
+      if (action === "accept") { await handleAccept(sessionId); nextStatus = "accepted"; }
+      else if (action === "reject") { await handleReject(sessionId); nextStatus = "rejected"; }
+      else if (action === "cancel") { await handleCancelSession(sessionId); nextStatus = "cancelled"; }
       if (nextStatus) {
-        // Update the frontend sessions state immediately
-        setSessions((prevSessions) =>
-          prevSessions.map((session) =>
-            session._id === sessionId
-              ? {
-                  ...session,
-                  status: nextStatus,
-                }
-              : session
-          )
-        );
-
-        // update the backup 'allSessions' list when filtering
-        setAllSessions((prevAll) =>
-          prevAll.map((session) =>
-            session._id === sessionId
-              ? {
-                  ...session,
-                  status: nextStatus,
-                }
-              : session
-          )
-        );
+        setSessions((prev) => prev.map((s) => (s._id === sessionId ? { ...s, status: nextStatus } : s)));
+        setAllSessions((prev) => prev.map((s) => (s._id === sessionId ? { ...s, status: nextStatus } : s)));
       }
-
-      // Close the modal
-      setDecisionModal({
-        open: false,
-        sessionId: null,
-        action: null,
-        message: "",
-      });
-    } catch (error) {
-      console.error("Error updating session:", error);
-    }
+      setDecisionModal({ open: false, sessionId: null, action: null, message: "" });
+    } catch { console.error("Error updating session"); }
   };
 
-  const closeDecision = () =>
-    setDecisionModal({
-      open: false,
-      sessionId: null,
-      action: null,
-      message: "",
-    });
+  const closeDecision = () => setDecisionModal({ open: false, sessionId: null, action: null, message: "" });
 
-  // Show profile form with existing data
   const handleShowForm = () => {
-    if (profile) {
-      setFormName(profile.name || "");
-      setFormBio(profile.bio || "");
-      setFormSubjects(profile.subjects?.join(", ") || "");
-    }
+    if (profile) { setFormName(profile.name || ""); setFormBio(profile.bio || ""); setFormSubjects(profile.subjects?.join(", ") || ""); }
     setShowProfileForm(true);
   };
-  // delete account function added
+
   const handleDeleteAccount = async () => {
-    try {
-      await axios.delete("/tutor/account");
-      logout();
-      navigate("/");
-    } catch (err) {
-      setError("Failed to delete account. Please try again.");
-      console.error("Account deletion failed:", err.response?.data);
-    }
+    try { await axios.delete("/tutor/account"); logout(); navigate("/"); }
+    catch { setError("Failed to delete account."); }
   };
 
+  const getStatusBadge = (status) => {
+    const map = { accepted: 'badge-success', pending: 'badge-warning', rejected: 'badge-danger', cancelled: 'badge-secondary' };
+    return map[status] || 'badge-info';
+  };
+
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
   return (
-    <div
-      style={{
-        margin: "20px",
-        backgroundColor: "#f0f8ff",
-        minHeight: "100vh",
-        padding: "20px",
-      }}
-    >
-      <h2>
-        Welcome to Your Tutor Dashboard{profile ? `, ${profile.name}!` : "!"}
-      </h2>
-
-      {/* Display error message */}
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      {/* Display loading state */}
-      {isLoading && <p>Loading...</p>}
-
-      {/* Profile Section */}
-      <div
-        style={{
-          backgroundColor: "white",
-          padding: "20px",
-          borderRadius: "8px",
-          marginBottom: "20px",
-        }}
-      >
-        <h3>My Profile</h3>
-        {profile ? (
-          <>
-            <p>
-              <strong>Name:</strong> {profile.name}
-            </p>
-            <p>
-              <strong>Bio:</strong> {profile.bio}
-            </p>
-            <p>
-              <strong>Subjects:</strong> {profile.subjects?.join(", ")}
-            </p>
-            <button
-              onClick={handleShowForm}
-              style={{
-                backgroundColor: "#4CAF50",
-                color: "white",
-                padding: "10px",
-                border: "none",
-                borderRadius: "5px",
-              }}
-            >
-              Update Profile
-            </button>
-            <button className="btn btn-danger" onClick={handleDeleteAccount}>
-              Delete Account
-            </button>
-          </>
-        ) : (
-          <>
-            <p>No tutor profile found. Let's create one!</p>
-            <button
-              onClick={handleShowForm}
-              style={{
-                backgroundColor: "#4CAF50",
-                color: "white",
-                padding: "10px",
-                border: "none",
-                borderRadius: "5px",
-              }}
-            >
-              Create Profile
-            </button>
-          </>
-        )}
+    <div className="dashboard-container" data-testid="tutor-dashboard">
+      <div className="dashboard-header">
+        <h1 className="dashboard-title">Welcome, <span>{profile?.name || 'Tutor'}</span></h1>
+        <p className="dashboard-subtitle">Manage your availability and tutoring sessions</p>
       </div>
 
-      {/* Availability Section */}
-      <div
-        style={{
-          backgroundColor: "white",
-          padding: "20px",
-          borderRadius: "8px",
-          marginBottom: "20px",
-        }}
-      >
-        <h3>My Availability</h3>
-        <form
-          onSubmit={handleSaveAvailability}
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 2fr auto",
-            gap: "10px",
-            alignItems: "end",
-          }}
-        >
-          <div>
-            <label>Weekday</label>
-            <select
-              value={weekday}
-              onChange={(e) => setWeekday(e.target.value)}
-              style={{
-                width: "100%",
-                padding: 8,
-                borderRadius: 6,
-                border: "1px solid #ccc",
-              }}
-            >
-              <option value={0}>Sunday</option>
-              <option value={1}>Monday</option>
-              <option value={2}>Tuesday</option>
-              <option value={3}>Wednesday</option>
-              <option value={4}>Thursday</option>
-              <option value={5}>Friday</option>
-              <option value={6}>Saturday</option>
-            </select>
-          </div>
-          <div>
-            <label>Time Slots (e.g., 09:00-12:00, 14:00-16:00)</label>
-            <input
-              value={slotsText}
-              onChange={(e) => setSlotsText(e.target.value)}
-              style={{
-                width: "100%",
-                padding: 8,
-                borderRadius: 6,
-                border: "1px solid #ccc",
-              }}
-            />
-          </div>
-          <button
-            type="submit"
-            style={{
-              backgroundColor: "#007bff",
-              color: "white",
-              padding: "10px 16px",
-              border: "none",
-              borderRadius: "8px",
-            }}
-          >
-            Save
-          </button>
-        </form>
-        <div style={{ marginTop: 12 }}>
-          {availability.length ? (
-            <ul style={{ paddingLeft: 16 }}>
-              {availability.map((a) => {
-                const days = [
-                  "Sunday",
-                  "Monday",
-                  "Tuesday",
-                  "Wednesday",
-                  "Thursday",
-                  "Friday",
-                  "Saturday",
-                ];
-                return (
-                  <li key={`${a._id}`}>
-                    <strong>{days[a.weekday]}:</strong>{" "}
-                    {a.slots
-                      .map(
-                        (s) =>
-                          `${String(Math.floor(s.startMinutes / 60)).padStart(
-                            2,
-                            "0"
-                          )}:${String(s.startMinutes % 60).padStart(
-                            2,
-                            "0"
-                          )} - ${String(Math.floor(s.endMinutes / 60)).padStart(
-                            2,
-                            "0"
-                          )}:${String(s.endMinutes % 60).padStart(2, "0")}`
-                      )
-                      .join(", ")}
-                  </li>
-                );
-              })}
-            </ul>
+      {error && <div className="error-alert" data-testid="error-alert"><FaTimes /> {error}</div>}
+      {isLoading && <div className="loading"><div className="loading-spinner"></div> Loading...</div>}
+
+      {/* Profile Section */}
+      <div className="glass-card" data-testid="profile-section">
+        <div className="card-header">
+          <h3><div className="card-header-icon"><FaUser /></div> My Profile</h3>
+        </div>
+        <div className="card-body">
+          {profile ? (
+            <>
+              <div className="profile-info">
+                <div className="profile-item"><div className="profile-label">Full Name</div><div className="profile-value">{profile.name}</div></div>
+                <div className="profile-item"><div className="profile-label">Bio</div><div className="profile-value" style={{ fontSize: 14 }}>{profile.bio}</div></div>
+                <div className="profile-item">
+                  <div className="profile-label">Subjects</div>
+                  <div style={{ marginTop: 6 }}>{profile.subjects?.map((s, i) => <span key={i} className="subject-badge">{s}</span>)}</div>
+                </div>
+              </div>
+              <div className="btn-group">
+                <button className="btn btn-secondary" onClick={handleShowForm} data-testid="update-profile-btn"><FaEdit /> Update Profile</button>
+                <button className="btn btn-danger" onClick={handleDeleteAccount} data-testid="delete-account-btn"><FaTrash /> Delete Account</button>
+              </div>
+            </>
           ) : (
-            <p>No availability set yet.</p>
+            <div className="empty-state">
+              <p className="empty-state-text">No tutor profile found. Create one to get started!</p>
+              <button className="btn btn-primary" onClick={handleShowForm} data-testid="create-profile-btn">Create Profile</button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Profile Form Modal */}
+      {showProfileForm && (
+        <div className="modal-overlay" onClick={() => setShowProfileForm(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} data-testid="profile-modal">
+            <div className="modal-header">
+              <h3 className="modal-title">{profile ? 'Update Profile' : 'Create Profile'}</h3>
+              <button className="modal-close" onClick={() => setShowProfileForm(false)}>&times;</button>
+            </div>
+            <form onSubmit={handleCreateOrUpdateProfile}>
+              <div className="modal-body">
+                <div className="form-group"><label className="form-label">Full Name</label><input type="text" className="form-input" value={formName} onChange={(e) => setFormName(e.target.value)} required data-testid="profile-name-input" /></div>
+                <div className="form-group" style={{ marginTop: 16 }}><label className="form-label">Bio</label><input type="text" className="form-input" value={formBio} onChange={(e) => setFormBio(e.target.value)} required data-testid="profile-bio-input" /></div>
+                <div className="form-group" style={{ marginTop: 16 }}><label className="form-label">Subjects (comma-separated)</label><input type="text" className="form-input" value={formSubjects} onChange={(e) => setFormSubjects(e.target.value)} required data-testid="profile-subjects-input" placeholder="Math, Science, English" /></div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowProfileForm(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" data-testid="save-profile-btn">{isLoading ? "Saving..." : "Save Profile"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Availability Section */}
+      <div className="glass-card" data-testid="availability-section">
+        <div className="card-header">
+          <h3><div className="card-header-icon"><FaClock /></div> My Availability</h3>
+        </div>
+        <div className="card-body">
+          <form onSubmit={handleSaveAvailability}>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Weekday</label>
+                <select className="form-select" value={weekday} onChange={(e) => setWeekday(e.target.value)} data-testid="availability-weekday">
+                  {days.map((d, i) => <option key={i} value={i}>{d}</option>)}
+                </select>
+              </div>
+              <div className="form-group" style={{ flex: 2 }}>
+                <label className="form-label">Time Slots</label>
+                <input className="form-input" value={slotsText} onChange={(e) => setSlotsText(e.target.value)} placeholder="09:00-12:00, 14:00-16:00" data-testid="availability-slots" />
+              </div>
+              <div className="form-group" style={{ display: 'flex', alignItems: 'flex-end' }}>
+                <button type="submit" className="btn btn-primary" data-testid="save-availability-btn"><FaSave /> Save</button>
+              </div>
+            </div>
+          </form>
+          {availability.length > 0 ? (
+            <div className="availability-list" style={{ marginTop: 20 }}>
+              {availability.map((a, idx) => (
+                <div key={idx} className="availability-item">
+                  <span className="availability-day">{days[a.weekday]}</span>
+                  <div className="availability-slots">
+                    {a.slots.map((s, si) => (
+                      <span key={si} className="time-slot">
+                        {String(Math.floor(s.startMinutes / 60)).padStart(2, "0")}:{String(s.startMinutes % 60).padStart(2, "0")} - 
+                        {String(Math.floor(s.endMinutes / 60)).padStart(2, "0")}:{String(s.endMinutes % 60).padStart(2, "0")}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ color: 'rgba(255,255,255,0.5)', marginTop: 16 }}>No availability set yet.</p>
           )}
         </div>
       </div>
 
       {/* Notifications Section */}
-      <div
-        style={{
-          backgroundColor: "white",
-          padding: 20,
-          borderRadius: 12,
-          marginBottom: 20,
-          boxShadow: "0 6px 24px rgba(0,0,0,0.06)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 8,
-          }}
-        >
-          <h3 style={{ margin: 0 }}>Notifications</h3>
-          <span style={{ fontSize: 13, color: "#6c757d" }}>
-            {notifications.filter((n) => !n.read).length} unread
-          </span>
+      <div className="glass-card" data-testid="notifications-section">
+        <div className="card-header">
+          <h3><div className="card-header-icon"><FaBell /></div> Notifications</h3>
+          <span className="badge badge-info">{notifications.filter(n => !n.read).length} unread</span>
         </div>
-        {notifications.length ? (
-          <ul style={{ listStyle: "none", paddingLeft: 0, margin: 0 }}>
-            {notifications.map((n) => (
-              <li
-                key={n._id}
-                style={{
-                  border: "1px solid #eef1f4",
-                  borderLeft: `4px solid ${colorByType(n.type)}`,
-                  borderRadius: 10,
-                  padding: 12,
-                  marginBottom: 10,
-                  background: n.read ? "#f8f9fb" : "#ffffff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span
-                    style={{
-                      display: "inline-block",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: "#fff",
-                      background: colorByType(n.type),
-                      padding: "4px 8px",
-                      borderRadius: 999,
-                    }}
-                  >
-                    {labelByType(n.type)}
-                  </span>
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{n.message}</div>
-                    <div style={{ fontSize: 12, color: "#6c757d" }}>
-                      {new Date(n.createdAt).toLocaleString()}
-                    </div>
+        <div className="card-body">
+          {notifications.length > 0 ? (
+            <div className="notification-list">
+              {notifications.map(n => (
+                <div key={n._id} className={`notification-item ${getNotificationType(n.type)}`} style={{ opacity: n.read ? 0.7 : 1 }}>
+                  <span className="badge" style={{ background: colorByType(n.type), color: '#fff', marginRight: 12 }}>{labelByType(n.type)}</span>
+                  <div className="notification-content" style={{ flex: 1 }}>
+                    <div className="notification-message">{n.message}</div>
+                    <div className="notification-time">{new Date(n.createdAt).toLocaleString()}</div>
                   </div>
+                  {!n.read && (
+                    <button className="btn btn-secondary btn-sm" onClick={() => markNotificationRead(n._id)} disabled={isMarking}>
+                      <FaCheck /> Mark read
+                    </button>
+                  )}
                 </div>
-                {!n.read && (
-                  <button
-                    onClick={() => markNotificationRead(n._id)}
-                    disabled={isMarking}
-                    style={{
-                      backgroundColor: "#007bff",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: 8,
-                      padding: "6px 10px",
-                    }}
-                  >
-                    Mark read
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p style={{ margin: 0 }}>No notifications yet.</p>
-        )}
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state"><p className="empty-state-text">No notifications yet.</p></div>
+          )}
+        </div>
       </div>
 
-      {/* Profile Form */}
-      {showProfileForm && (
-        <div
-          style={{
-            backgroundColor: "white",
-            padding: "20px",
-            borderRadius: "8px",
-            marginBottom: "20px",
-          }}
-        >
-          <h3>{profile ? "Update Profile" : "Create Profile"}</h3>
-          <form onSubmit={handleCreateOrUpdateProfile}>
-            <div style={{ marginBottom: "10px" }}>
-              <label>Name: </label>
-              <input
-                type="text"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                required
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: "5px",
-                  border: "1px solid #ccc",
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: "10px" }}>
-              <label>Bio: </label>
-              <input
-                type="text"
-                value={formBio}
-                onChange={(e) => setFormBio(e.target.value)}
-                required
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: "5px",
-                  border: "1px solid #ccc",
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: "10px" }}>
-              <label>Subjects (comma-separated): </label>
-              <input
-                type="text"
-                value={formSubjects}
-                onChange={(e) => setFormSubjects(e.target.value)}
-                required
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: "5px",
-                  border: "1px solid #ccc",
-                }}
-              />
-            </div>
-            <button
-              type="submit"
-              style={{
-                backgroundColor: "#4CAF50",
-                color: "white",
-                padding: "10px",
-                border: "none",
-                borderRadius: "5px",
-              }}
-            >
-              {isLoading ? "Saving..." : "Save Profile"}
-            </button>
-          </form>
-        </div>
-      )}
-
       {/* Sessions Section */}
-      <div
-        style={{
-          backgroundColor: "white",
-          padding: "20px",
-          borderRadius: "8px",
-        }}
-      >
-        <h3>My Sessions</h3>
-        <div
-          className="filter-bar"
-          style={{ marginBottom: 16, display: "flex", gap: 8 }}
-        >
-          {["All", "Accepted", "Rejected", "Pending"].map((btnText) => (
-            <button
-              key={btnText}
-              onClick={() => {
-                setFilter(btnText);
-                applyFilter(btnText);
-              }}
-              style={{
-                backgroundColor: filter === btnText ? "#007bff" : "#f1f1f1",
-                color: filter === btnText ? "white" : "black",
-                padding: "8px 14px",
-                border: "none",
-                borderRadius: 6,
-                cursor: "pointer",
-              }}
-            >
-              {btnText}
-            </button>
-          ))}
+      <div className="glass-card" data-testid="sessions-section">
+        <div className="card-header">
+          <h3><div className="card-header-icon"><FaBook /></div> My Sessions</h3>
         </div>
-
-        {sessions.length > 0 ? (
-          <table className="table table-striped table-bordered mt-3">
-            <thead className="table-light">
-              <tr>
-                <th scope="col">#</th>
-                <th scope="col">Date</th>
-                <th scope="col">Time</th>
-                <th scope="col">Duration</th>
-                <th scope="col">Client ID</th>
-                <th scope="col">Client Name</th>
-                <th scope="col">Status</th>
-                <th scope="col">Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {sessions.length > 0 ? (
-                sessions.map((session, index) => (
-                  <tr key={session._id}>
-                    <th scope="row">{index + 1}</th>
-                    <td>{new Date(session.date).toLocaleDateString()}</td>
-                    <td>{new Date(session.date).toLocaleTimeString()}</td>
-                    <td>{session.duration} min</td>
-                    <td>{session.client?._id || session.client}</td>
-                    <td>{session.client?.name || "N/A"}</td>
-                    <td>
-                      <span
-                        className={`badge ${
-                          session.status === "accepted"
-                            ? "bg-success"
-                            : session.status === "rejected"
-                            ? "bg-danger"
-                            : "bg-warning text-dark"
-                        }`}
-                      >
-                        {session.status || "pending"}
-                      </span>
-                    </td>
-                    <td>
-                      {(session.status === "pending" ||
-                        session.status == null) && (
-                        <div className="d-flex gap-2">
-                          <button
-                            className="btn btn-success btn-sm"
-                            onClick={() => openDecision("accept", session._id)}
-                          >
-                            Accept
-                          </button>
-                          <button
-                            className="btn btn-danger btn-sm"
-                            onClick={() => openDecision("reject", session._id)}
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      )}
-                      {session.status === "accepted" && (
-                        <button
-                          className="btn btn-outline-danger btn-sm"
-                          onClick={() => openDecision("cancel", session._id)}
-                        >
-                          Cancel Session
-                        </button>
-                      )}
-                    </td>
+        <div className="card-body">
+          <div className="filter-bar">
+            {["All", "Accepted", "Rejected", "Pending"].map((btn) => (
+              <button key={btn} className={`filter-btn ${filter === btn ? 'active' : ''}`} onClick={() => { setFilter(btn); applyFilter(btn); }} data-testid={`filter-${btn.toLowerCase()}`}>
+                {btn}
+              </button>
+            ))}
+          </div>
+          {sessions.length > 0 ? (
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Duration</th>
+                    <th>Client</th>
+                    <th>Status</th>
+                    <th>Action</th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="8" className="text-center">
-                    No sessions booked yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        ) : (
-          <p>No sessions booked yet.</p>
-        )}
+                </thead>
+                <tbody>
+                  {sessions.map((session, index) => (
+                    <tr key={session._id}>
+                      <td>{index + 1}</td>
+                      <td>{new Date(session.date).toLocaleDateString()}</td>
+                      <td>{new Date(session.date).toLocaleTimeString()}</td>
+                      <td>{session.duration} min</td>
+                      <td>{session.client?.name || "N/A"}</td>
+                      <td><span className={`badge ${getStatusBadge(session.status)}`}>{session.status || "pending"}</span></td>
+                      <td>
+                        {(session.status === "pending" || session.status == null) && (
+                          <div className="btn-group">
+                            <button className="btn btn-success btn-sm" onClick={() => openDecision("accept", session._id)} data-testid={`accept-${session._id}`}><FaCheck /></button>
+                            <button className="btn btn-danger btn-sm" onClick={() => openDecision("reject", session._id)} data-testid={`reject-${session._id}`}><FaTimes /></button>
+                          </div>
+                        )}
+                        {session.status === "accepted" && (
+                          <button className="btn btn-outline btn-sm" onClick={() => openDecision("cancel", session._id)} data-testid={`cancel-${session._id}`}><FaTimes /> Cancel</button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="empty-state"><div className="empty-state-icon"><FaCalendarAlt /></div><p className="empty-state-text">No sessions booked yet.</p></div>
+          )}
+        </div>
       </div>
 
       {/* Decision Modal */}
       {decisionModal.open && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.35)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2000,
-          }}
-        >
-          <div
-            style={{
-              width: "min(520px, 92vw)",
-              background: "#fff",
-              borderRadius: 12,
-              boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
-            }}
-          >
-            <div
-              style={{
-                padding: 16,
-                borderBottom: "1px solid #eef1f4",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <strong style={{ fontSize: 18 }}>
-                {decisionModal.action === "accept"
-                  ? "Accept Session"
-                  : "Reject Session"}
-              </strong>
-              <button
-                onClick={closeDecision}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  fontSize: 20,
-                  lineHeight: 1,
-                  cursor: "pointer",
-                }}
-              >
-                ×
-              </button>
+        <div className="modal-overlay" onClick={closeDecision}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} data-testid="decision-modal">
+            <div className="modal-header">
+              <h3 className="modal-title">{decisionModal.action === "accept" ? "Accept Session" : decisionModal.action === "reject" ? "Reject Session" : "Cancel Session"}</h3>
+              <button className="modal-close" onClick={closeDecision}>&times;</button>
             </div>
-            <div style={{ padding: 16 }}>
-              <label style={{ display: "block", marginBottom: 8 }}>
-                Optional message to client
-              </label>
-              <textarea
-                value={decisionModal.message}
-                onChange={(e) =>
-                  setDecisionModal((prev) => ({
-                    ...prev,
-                    message: e.target.value,
-                  }))
-                }
-                rows={4}
-                placeholder={
-                  decisionModal.action === "accept"
-                    ? "e.g., Looking forward to our session!"
-                    : decisionModal.action === "reject"
-                    ? "e.g., I’m unavailable at that time, please pick another slot."
-                    : "Optional note explaining why you are cancelling."
-                }
-                style={{
-                  width: "100%",
-                  border: "1px solid #d7dce3",
-                  borderRadius: 10,
-                  padding: 10,
-                  background: "#fbfcfe",
-                }}
-              />
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">Optional message to client</label>
+                <textarea
+                  className="form-input"
+                  rows={4}
+                  value={decisionModal.message}
+                  onChange={(e) => setDecisionModal((prev) => ({ ...prev, message: e.target.value }))}
+                  placeholder={decisionModal.action === "accept" ? "e.g., Looking forward to our session!" : decisionModal.action === "reject" ? "e.g., I'm unavailable at that time." : "Optional note for cancellation."}
+                  data-testid="decision-message"
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
             </div>
-            <div
-              style={{
-                padding: 16,
-                borderTop: "1px solid #eef1f4",
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: 8,
-              }}
-            >
-              <button
-                onClick={closeDecision}
-                style={{
-                  background: "#6c757d",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "10px 14px",
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={submitDecision}
-                style={{
-                  background:
-                    decisionModal.action === "accept"
-                      ? "#28a745"
-                      : "#dc3545",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "10px 14px",
-                }}
-              >
-                {decisionModal.action === "accept"
-                  ? "Accept"
-                  : decisionModal.action === "reject"
-                  ? "Reject"
-                  : "Confirm Cancel"}
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={closeDecision}>Cancel</button>
+              <button className={`btn ${decisionModal.action === "accept" ? "btn-success" : "btn-danger"}`} onClick={submitDecision} data-testid="confirm-decision-btn">
+                {decisionModal.action === "accept" ? <><FaCheck /> Accept</> : decisionModal.action === "reject" ? <><FaTimes /> Reject</> : <><FaTimes /> Confirm Cancel</>}
               </button>
             </div>
           </div>
         </div>
       )}
+
       <Chatbot />
     </div>
   );

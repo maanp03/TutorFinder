@@ -3,13 +3,9 @@ import axios from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Chatbot from '../components/Chatbot';
- 
-// Bootstrap CDN
-const bootstrapLink = document.createElement("link");
-bootstrapLink.rel = "stylesheet";
-bootstrapLink.href = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css";
-document.head.appendChild(bootstrapLink);
- 
+import { FaUser, FaChalkboardTeacher, FaCalendarAlt, FaBell, FaEdit, FaTrash, FaEye, FaTimes, FaCheck, FaBook, FaClock } from 'react-icons/fa';
+import './Dashboard.css';
+
 const ClientDashboard = () => {
   const [profile, setProfile] = useState(null);
   const [tutors, setTutors] = useState([]);
@@ -25,84 +21,66 @@ const ClientDashboard = () => {
   const [selectedTutor, setSelectedTutor] = useState(null);
   const [showTutorModal, setShowTutorModal] = useState(false);
   const [tutorAvailability, setTutorAvailability] = useState([]);
- 
+
   const userId = localStorage.getItem('userId');
   const { logout } = useAuth();
   const navigate = useNavigate();
- 
+
   useEffect(() => {
     axios
       .get(`/client/profile/${userId}`)
-      .then((res) => {
-        setProfile(res.data);
-      })
+      .then((res) => setProfile(res.data))
       .catch(() => setError('Failed to fetch profile'));
- 
+
     axios
       .get('/tutor/profile-all')
       .then((res) => setTutors(res.data))
       .catch(() => setError('Failed to fetch tutors'));
   }, [userId]);
- 
+
   useEffect(() => {
     if (profile?._id) {
       axios
         .get('/sessions', { params: { clientId: profile._id } })
-        .then((res) => {
-          setSessions(res.data);
-        })
+        .then((res) => setSessions(res.data))
         .catch(() => setError('Failed to fetch sessions'));
     }
   }, [profile]);
 
-  // Poll notifications every 10s
   useEffect(() => {
     let timer;
     const poll = async () => {
       try {
         const res = await axios.get('/notifications');
         setNotifications(res.data);
-      } catch (e) {
-        // ignore
-      } finally {
-        timer = setTimeout(poll, 10000);
-      }
+      } catch (e) {}
+      finally { timer = setTimeout(poll, 10000); }
     };
     poll();
     return () => clearTimeout(timer);
   }, []);
- 
+
   const handleCreateOrUpdateProfile = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('/client/profile', {
-        name: formName,
-        grade: formGrade,
-      });
+      const res = await axios.post('/client/profile', { name: formName, grade: formGrade });
       setProfile(res.data);
       setShowProfileForm(false);
-    } catch {
-      setError('Failed to update profile');
-    }
+    } catch { setError('Failed to update profile'); }
   };
- 
+
   const handleShowProfileForm = () => {
-    if (profile) {
-      setFormName(profile.name);
-      setFormGrade(profile.grade);
-    }
+    if (profile) { setFormName(profile.name); setFormGrade(profile.grade); }
     setShowProfileForm(true);
   };
- 
+
   const nextDateForWeekday = (weekday, timeHHMM) => {
     const now = new Date();
     const [hh, mm] = timeHHMM.split(':').map(Number);
     const result = new Date(now);
     const currentDow = now.getDay();
     let delta = (weekday - currentDow + 7) % 7;
-    if (delta === 0 && (now.getHours() > hh || (now.getHours() === hh && now.getMinutes() >= mm))) {
-      delta = 7; // move to next week if time already passed today
-    }
+    if (delta === 0 && (now.getHours() > hh || (now.getHours() === hh && now.getMinutes() >= mm))) delta = 7;
     result.setDate(now.getDate() + delta);
     result.setHours(hh, mm, 0, 0);
     return result.toISOString();
@@ -111,37 +89,21 @@ const ClientDashboard = () => {
   const handleBookSession = async (tutorId) => {
     try {
       const iso = nextDateForWeekday(Number(bookingWeekday), bookingTime);
-      const res = await axios.post('/sessions', {
-        tutorId,
-        clientId: profile._id,
-        date: iso,
-        duration: Number(bookingDuration),
-      });
+      const res = await axios.post('/sessions', { tutorId, clientId: profile._id, date: iso, duration: Number(bookingDuration) });
       setSessions((prev) => [...prev, res.data]);
-    } catch {
-      setError('Failed to book session');
-    }
+    } catch { setError('Failed to book session'); }
   };
 
   const handleCancel = async (id) => {
     try {
       const res = await axios.post(`/sessions/${id}/cancel`);
       setSessions(prev => prev.map(s => (s._id === id ? res.data : s)));
-    } catch (e) {
-      setError('Failed to cancel session');
-    }
+    } catch { setError('Failed to cancel session'); }
   };
 
-  // Delete Account Function Added
   const handleDeleteAccount = async () => {
-    try {
-      await axios.delete('/client/account');
-      logout();
-      navigate('/');
-    } catch (err) {
-      setError('Failed to delete account. Please try again.');
-      console.error('Account deletion failed:', err.response?.data);
-    }
+    try { await axios.delete('/client/account'); logout(); navigate('/'); }
+    catch { setError('Failed to delete account'); }
   };
 
   const handleViewTutor = async (tutor) => {
@@ -149,26 +111,15 @@ const ClientDashboard = () => {
     setShowTutorModal(true);
     try {
       const res = await axios.get(`/availability/tutor/${tutor._id}`);
-      // Remove duplicates by weekday
       const uniqueAvailability = res.data.reduce((acc, current) => {
-        const existing = acc.find(item => item.weekday === current.weekday);
-        if (!existing) {
-          acc.push(current);
-        }
+        if (!acc.find(item => item.weekday === current.weekday)) acc.push(current);
         return acc;
       }, []);
       setTutorAvailability(uniqueAvailability);
-    } catch (err) {
-      console.error('Failed to fetch tutor availability:', err);
-      setTutorAvailability([]);
-    }
+    } catch { setTutorAvailability([]); }
   };
 
-  const closeTutorModal = () => {
-    setShowTutorModal(false);
-    setSelectedTutor(null);
-    setTutorAvailability([]);
-  };
+  const closeTutorModal = () => { setShowTutorModal(false); setSelectedTutor(null); setTutorAvailability([]); };
 
   const formatTime = (minutes) => {
     const hours = Math.floor(minutes / 60);
@@ -176,106 +127,110 @@ const ClientDashboard = () => {
     return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
   };
 
-  const getWeekdayName = (weekday) => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return days[weekday];
+  const getWeekdayName = (weekday) => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][weekday];
+
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      accepted: 'badge-success',
+      pending: 'badge-warning',
+      rejected: 'badge-danger',
+      cancelled: 'badge-secondary'
+    };
+    return statusMap[status] || 'badge-info';
   };
- 
+
+  const getNotificationType = (type) => {
+    if (type === 'session_accepted') return 'type-accepted';
+    if (type === 'session_rejected') return 'type-rejected';
+    if (type === 'session_cancelled') return 'type-cancelled';
+    return 'type-request';
+  };
+
   return (
-    <div className="d-flex flex-column align-items-center justify-content-center min-vh-100 bg-light py-5 px-3">
-      <h2 className="mb-4 fw-bold text-center">Client Dashboard</h2>
- 
-      {error && (
-        <div className="alert alert-danger w-100 text-center" role="alert">
-          {error}
+    <div className="dashboard-container" data-testid="client-dashboard">
+      <div className="dashboard-header">
+        <h1 className="dashboard-title">Welcome, <span>{profile?.name || 'Student'}</span></h1>
+        <p className="dashboard-subtitle">Manage your tutoring sessions and find the perfect tutor</p>
+      </div>
+
+      {error && <div className="error-alert" data-testid="error-alert"><FaTimes /> {error}</div>}
+
+      {/* Profile Section */}
+      <div className="glass-card" data-testid="profile-section">
+        <div className="card-header">
+          <h3><div className="card-header-icon"><FaUser /></div> My Profile</h3>
+        </div>
+        <div className="card-body">
+          {profile ? (
+            <>
+              <div className="profile-info">
+                <div className="profile-item">
+                  <div className="profile-label">Full Name</div>
+                  <div className="profile-value">{profile.name}</div>
+                </div>
+                <div className="profile-item">
+                  <div className="profile-label">Grade Level</div>
+                  <div className="profile-value">Grade {profile.grade}</div>
+                </div>
+              </div>
+              <div className="btn-group">
+                <button className="btn btn-secondary" onClick={handleShowProfileForm} data-testid="update-profile-btn">
+                  <FaEdit /> Update Profile
+                </button>
+                <button className="btn btn-danger" onClick={handleDeleteAccount} data-testid="delete-account-btn">
+                  <FaTrash /> Delete Account
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="empty-state">
+              <p className="empty-state-text">No profile found. Create one to get started!</p>
+              <button className="btn btn-primary" onClick={handleShowProfileForm} data-testid="create-profile-btn">
+                Create Profile
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Profile Form Modal */}
+      {showProfileForm && (
+        <div className="modal-overlay" onClick={() => setShowProfileForm(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} data-testid="profile-modal">
+            <div className="modal-header">
+              <h3 className="modal-title">{profile ? 'Update Profile' : 'Create Profile'}</h3>
+              <button className="modal-close" onClick={() => setShowProfileForm(false)}>&times;</button>
+            </div>
+            <form onSubmit={handleCreateOrUpdateProfile}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Full Name</label>
+                  <input type="text" className="form-input" value={formName} onChange={(e) => setFormName(e.target.value)} required data-testid="profile-name-input" />
+                </div>
+                <div className="form-group" style={{ marginTop: 16 }}>
+                  <label className="form-label">Grade Level</label>
+                  <input type="number" className="form-input" value={formGrade} onChange={(e) => setFormGrade(e.target.value)} required data-testid="profile-grade-input" />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowProfileForm(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" data-testid="save-profile-btn">Save Profile</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
- 
-      {/* Profile Section */}
-      <div className="w-100" style={{ maxWidth: '1100px' }}>
-        <div className="card shadow mb-5">
-          <div className="card-header bg-dark text-white text-center fw-semibold">
-            My Profile
-          </div>
-          <div className="card-body">
-            {profile ? (
-              <div>
-                <p><strong>Name:</strong> {profile.name}</p>
-                <p><strong>Grade:</strong> {profile.grade}</p>
-                <div>
-                  <button
-                    className="btn btn-primary me-2"
-                    onClick={handleShowProfileForm}
-                  >
-                    Update Profile
-                  </button>
-                  <button
-                    className="btn btn-danger"
-                    onClick={handleDeleteAccount}
-                  >
-                    Delete Account
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <p>No profile found.</p>
-                <button
-                  className="btn btn-primary"
-                  onClick={handleShowProfileForm}
-                >
-                  Create Profile
-                </button>
-              </div>
-            )}
-          </div>
+
+      {/* Quick Booking Controls */}
+      <div className="glass-card" data-testid="booking-controls">
+        <div className="card-header">
+          <h3><div className="card-header-icon"><FaCalendarAlt /></div> Quick Booking</h3>
         </div>
- 
-        {/* Profile Form */}
-        {showProfileForm && (
-          <div className="card shadow mb-5">
-            <div className="card-header bg-secondary text-white text-center fw-semibold">
-              {profile ? 'Update Profile' : 'Create Profile'}
-            </div>
-            <div className="card-body">
-              <form onSubmit={handleCreateOrUpdateProfile}>
-                <div className="mb-3">
-                  <label className="form-label">Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label">Grade</label>
-                  <input
-                    type="number"
-                    className="form-control"
-                    value={formGrade}
-                    onChange={(e) => setFormGrade(e.target.value)}
-                    required
-                  />
-                </div>
-                <button type="submit" className="btn btn-success">
-                  Save Profile
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
- 
-        {/* Quick Booking Controls */}
-        <div className="card shadow mb-4">
-          <div className="card-header bg-dark text-white text-center fw-semibold">
-            Quick Booking Controls
-          </div>
-          <div className="card-body row g-3 align-items-end">
-            <div className="col-12 col-md-4">
+        <div className="card-body">
+          <div className="form-row">
+            <div className="form-group">
               <label className="form-label">Weekday</label>
-              <select className="form-select" value={bookingWeekday} onChange={(e) => setBookingWeekday(e.target.value)}>
+              <select className="form-select" value={bookingWeekday} onChange={(e) => setBookingWeekday(e.target.value)} data-testid="booking-weekday">
                 <option value={0}>Sunday</option>
                 <option value={1}>Monday</option>
                 <option value={2}>Tuesday</option>
@@ -285,215 +240,203 @@ const ClientDashboard = () => {
                 <option value={6}>Saturday</option>
               </select>
             </div>
-            <div className="col-6 col-md-4">
+            <div className="form-group">
               <label className="form-label">Time</label>
-              <input className="form-control" type="time" value={bookingTime} onChange={(e) => setBookingTime(e.target.value)} />
+              <input className="form-input" type="time" value={bookingTime} onChange={(e) => setBookingTime(e.target.value)} data-testid="booking-time" />
             </div>
-            <div className="col-6 col-md-4">
+            <div className="form-group">
               <label className="form-label">Duration (min)</label>
-              <input className="form-control" type="number" min="15" step="15" value={bookingDuration} onChange={(e) => setBookingDuration(e.target.value)} />
-            </div>
-            <div className="col-12">
-              <small className="text-muted">Tip: Choose a weekday/time that matches the tutor's availability.</small>
+              <input className="form-input" type="number" min="15" step="15" value={bookingDuration} onChange={(e) => setBookingDuration(e.target.value)} data-testid="booking-duration" />
             </div>
           </div>
+          <p className="form-hint">Choose a weekday and time that matches the tutor's availability</p>
         </div>
+      </div>
 
-        {/* Tutors Section */}
-        <div className="card shadow mb-5">
-          <div className="card-header bg-dark text-white text-center fw-semibold">
-            Available Tutors
-          </div>
-          <div className="card-body p-0">
-            <table className="table table-hover mb-0 text-center">
-              <thead className="table-light">
-                <tr>
-                  <th>Name</th>
-                  <th>Subjects</th>
-                  <th>Bio</th>
-                  <th>Action</th>
-                  <th>View Tutor</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tutors.length > 0 ? tutors.map((tutor) => (
-                  <tr key={tutor._id}>
-                    <td>{tutor.name}</td>
-                    <td>{tutor.subjects.join(', ')}</td>
-                    <td>{tutor.bio}</td>
-                    <td>
-                      <button
-                        className="btn btn-sm btn-success"
-                        onClick={() => handleBookSession(tutor._id)}
-                      >
-                        Book Session
-                      </button>
-                    </td>
-
-                    <td>
-                      <button 
-                        className="btn btn-sm btn-info"
-                        onClick={() => handleViewTutor(tutor)}
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                )) : (
+      {/* Available Tutors */}
+      <div className="glass-card" data-testid="tutors-section">
+        <div className="card-header">
+          <h3><div className="card-header-icon"><FaChalkboardTeacher /></div> Available Tutors</h3>
+        </div>
+        <div className="card-body">
+          {tutors.length > 0 ? (
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
                   <tr>
-                    <td colSpan="5" className="text-center">No tutors available.</td>
+                    <th>Name</th>
+                    <th>Subjects</th>
+                    <th>Bio</th>
+                    <th>Actions</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
- 
-        {/* Sessions Section */}
-        <div className="card shadow">
-          <div className="card-header bg-secondary text-white text-center fw-semibold">
-            My Sessions
-          </div>
-          <div className="card-body p-0">
-            <table className="table table-striped mb-0 text-center">
-              <thead className="table-light">
-                <tr>
-                  <th>Date</th>
-                  <th>Duration</th>
-                  <th>Tutor Name</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sessions.length > 0 ? sessions.map((session) => (
-                  <tr key={session._id}>
-                    <td>{new Date(session.date).toLocaleString()}</td>
-                    <td>{session.duration} min</td>
-                    <td>{session.tutor?.name || 'N/A'}</td>
-                    <td>{session.status || 'pending'}</td>
-                    <td>
-                      {session.status === 'pending' && (
-                        <button className="btn btn-sm btn-outline-danger" onClick={() => handleCancel(session._id)}>Cancel</button>
-                      )}
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan="3" className="text-center">No sessions booked yet.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Notifications Section */}
-        <div className="card shadow mt-4">
-          <div className="card-header bg-dark text-white d-flex justify-content-between align-items-center fw-semibold">
-            <span>Notifications</span>
-            <small className="text-light-50">{notifications.filter(n => !n.read).length} unread</small>
-          </div>
-          <div className="card-body">
-            {notifications.length ? (
-              <ul className="list-unstyled mb-0">
-                {notifications.map(n => (
-                  <li key={n._id} className="d-flex justify-content-between align-items-start p-2 mb-2 border rounded" style={{borderLeft: `4px solid ${n.type==='session_accepted'?'#28a745':n.type==='session_rejected'?'#dc3545':n.type==='session_cancelled'?'#6c757d':'#0d6efd'}`}}>
-                    <div>
-                      <span className="badge me-2" style={{backgroundColor: n.type==='session_accepted'?'#28a745':n.type==='session_rejected'?'#dc3545':n.type==='session_cancelled'?'#6c757d':'#0d6efd'}}>
-                        {n.type==='session_accepted'?'Accepted':n.type==='session_rejected'?'Rejected':n.type==='session_cancelled'?'Cancelled':'New Request'}
-                      </span>
-                      <strong>{n.message}</strong>
-                      <div className="text-muted" style={{fontSize: 12}}>{new Date(n.createdAt).toLocaleString()}</div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mb-0">No notifications yet.</p>
-            )}
-          </div>
-        </div>
-
-        {/* Tutor Details Modal */}
-        {showTutorModal && selectedTutor && (
-          <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-            <div className="modal-dialog modal-lg modal-dialog-centered">
-              <div className="modal-content">
-                <div className="modal-header bg-primary text-white">
-                  <h5 className="modal-title fw-bold">Tutor Details</h5>
-                  <button 
-                    type="button" 
-                    className="btn-close btn-close-white" 
-                    onClick={closeTutorModal}
-                  ></button>
-                </div>
-                <div className="modal-body">
-                  <div className="row">
-                    <div className="col-md-6">
-                      <h6 className="fw-bold text-primary">Personal Information</h6>
-                      <p><strong>Name:</strong> {selectedTutor.name}</p>
-                      <p><strong>Bio:</strong> {selectedTutor.bio}</p>
-                      <p><strong>Subjects:</strong></p>
-                      <div className="d-flex flex-wrap gap-2">
-                        {selectedTutor.subjects.map((subject, index) => (
-                          <span key={index} className="badge bg-secondary">{subject}</span>
+                </thead>
+                <tbody>
+                  {tutors.map((tutor) => (
+                    <tr key={tutor._id}>
+                      <td style={{ fontWeight: 600 }}>{tutor.name}</td>
+                      <td>
+                        {tutor.subjects.map((subj, i) => (
+                          <span key={i} className="subject-badge">{subj}</span>
                         ))}
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <h6 className="fw-bold text-primary">Availability</h6>
-                      {tutorAvailability.length > 0 ? (
-                        <div className="availability-list">
-                          {tutorAvailability.map((avail, index) => (
-                            <div key={index} className="mb-3 p-3 border rounded">
-                              <h6 className="fw-semibold text-success">{getWeekdayName(avail.weekday)}</h6>
-                              <div className="time-slots">
-                                {avail.slots.map((slot, slotIndex) => (
-                                  <span 
-                                    key={slotIndex} 
-                                    className="badge bg-light text-dark me-2 mb-1"
-                                  >
-                                    {formatTime(slot.startMinutes)} - {formatTime(slot.endMinutes)}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
+                      </td>
+                      <td style={{ color: 'rgba(255,255,255,0.7)' }}>{tutor.bio}</td>
+                      <td>
+                        <div className="btn-group">
+                          <button className="btn btn-success btn-sm" onClick={() => handleBookSession(tutor._id)} data-testid={`book-${tutor._id}`}>
+                            <FaCheck /> Book
+                          </button>
+                          <button className="btn btn-info btn-sm" onClick={() => handleViewTutor(tutor)} data-testid={`view-${tutor._id}`}>
+                            <FaEye /> View
+                          </button>
                         </div>
-                      ) : (
-                        <p className="text-muted">No availability information available</p>
-                      )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-state-icon"><FaChalkboardTeacher /></div>
+              <p className="empty-state-text">No tutors available at the moment</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sessions */}
+      <div className="glass-card" data-testid="sessions-section">
+        <div className="card-header">
+          <h3><div className="card-header-icon"><FaBook /></div> My Sessions</h3>
+        </div>
+        <div className="card-body">
+          {sessions.length > 0 ? (
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Duration</th>
+                    <th>Tutor</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sessions.map((session) => (
+                    <tr key={session._id}>
+                      <td>{new Date(session.date).toLocaleString()}</td>
+                      <td><FaClock style={{ marginRight: 6, opacity: 0.6 }} />{session.duration} min</td>
+                      <td>{session.tutor?.name || 'N/A'}</td>
+                      <td><span className={`badge ${getStatusBadge(session.status)}`}>{session.status || 'pending'}</span></td>
+                      <td>
+                        {session.status === 'pending' && (
+                          <button className="btn btn-danger btn-sm" onClick={() => handleCancel(session._id)} data-testid={`cancel-${session._id}`}>
+                            <FaTimes /> Cancel
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-state-icon"><FaCalendarAlt /></div>
+              <p className="empty-state-text">No sessions booked yet</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Notifications */}
+      <div className="glass-card" data-testid="notifications-section">
+        <div className="card-header">
+          <h3><div className="card-header-icon"><FaBell /></div> Notifications</h3>
+          <span className="badge badge-info">{notifications.filter(n => !n.read).length} unread</span>
+        </div>
+        <div className="card-body">
+          {notifications.length > 0 ? (
+            <div className="notification-list">
+              {notifications.map(n => (
+                <div key={n._id} className={`notification-item ${getNotificationType(n.type)}`}>
+                  <div className="notification-content">
+                    <div className="notification-message">{n.message}</div>
+                    <div className="notification-time">{new Date(n.createdAt).toLocaleString()}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p className="empty-state-text">No notifications yet</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Tutor Details Modal */}
+      {showTutorModal && selectedTutor && (
+        <div className="modal-overlay" onClick={closeTutorModal}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} data-testid="tutor-modal">
+            <div className="modal-header">
+              <h3 className="modal-title">Tutor Details</h3>
+              <button className="modal-close" onClick={closeTutorModal}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <div className="grid-2">
+                <div>
+                  <h4 style={{ color: '#d4af37', marginBottom: 16, fontSize: 14, textTransform: 'uppercase', letterSpacing: 1 }}>Personal Info</h4>
+                  <div className="profile-item" style={{ marginBottom: 12 }}>
+                    <div className="profile-label">Name</div>
+                    <div className="profile-value">{selectedTutor.name}</div>
+                  </div>
+                  <div className="profile-item" style={{ marginBottom: 12 }}>
+                    <div className="profile-label">Bio</div>
+                    <div className="profile-value" style={{ fontSize: 14 }}>{selectedTutor.bio}</div>
+                  </div>
+                  <div className="profile-item">
+                    <div className="profile-label">Subjects</div>
+                    <div style={{ marginTop: 6 }}>
+                      {selectedTutor.subjects.map((s, i) => <span key={i} className="subject-badge">{s}</span>)}
                     </div>
                   </div>
                 </div>
-                <div className="modal-footer">
-                  <button 
-                    type="button" 
-                    className="btn btn-success"
-                    onClick={() => {
-                      handleBookSession(selectedTutor._id);
-                      closeTutorModal();
-                    }}
-                  >
-                    Book Session
-                  </button>
-                  <button 
-                    type="button" 
-                    className="btn btn-secondary" 
-                    onClick={closeTutorModal}
-                  >
-                    Close
-                  </button>
+                <div>
+                  <h4 style={{ color: '#d4af37', marginBottom: 16, fontSize: 14, textTransform: 'uppercase', letterSpacing: 1 }}>Availability</h4>
+                  {tutorAvailability.length > 0 ? (
+                    <div className="availability-list">
+                      {tutorAvailability.map((avail, idx) => (
+                        <div key={idx} className="availability-item">
+                          <span className="availability-day">{getWeekdayName(avail.weekday)}</span>
+                          <div className="availability-slots">
+                            {avail.slots.map((slot, si) => (
+                              <span key={si} className="time-slot">{formatTime(slot.startMinutes)} - {formatTime(slot.endMinutes)}</span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ color: 'rgba(255,255,255,0.5)' }}>No availability info</p>
+                  )}
                 </div>
               </div>
             </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={closeTutorModal}>Close</button>
+              <button className="btn btn-primary" onClick={() => { handleBookSession(selectedTutor._id); closeTutorModal(); }}>
+                <FaCheck /> Book Session
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
       <Chatbot />
     </div>
   );
 };
- 
+
 export default ClientDashboard;

@@ -8,6 +8,9 @@ import RegisterPage from './pages/RegisterPage';
 import AdminDashboard from './pages/AdminDashboard';
 import TutorDashboard from './pages/TutorDashboard';
 import ClientDashboard from './pages/ClientDashboard';
+import ContactPage from './pages/ContactPage';
+import PricingPage from './pages/PricingPage';
+import AboutPage from './pages/AboutPage';
 
 function App() {
   return (
@@ -21,7 +24,10 @@ function App() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/tutor" element={<TutorDashboard />} />
           <Route path="/client" element={<ClientDashboard />} />
-          <Route path="*" element={<h1>404 - Not Found</h1>} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="*" element={<h1 style={{color: '#fff', textAlign: 'center', padding: '100px'}}>404 - Not Found</h1>} />
         </Routes>
       </Router>
     </AuthProvider>
